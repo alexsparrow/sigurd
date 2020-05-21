@@ -1,0 +1,20 @@
+[package]
+name = "sigurd"
+version = "0.1.0"
+authors = ["Alex Sparrow <alex@quartic.io>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "sigard"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sigard"
+path = "src/main.rs"
+
+[dependencies]
+pest = "2.1.3"
+pest_derive = "2.1.0"
+lazy_static = "1.4.0"
