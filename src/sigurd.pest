@@ -32,7 +32,7 @@ literal = _{ bool | float | int | string }
 
 // Identifiers
 ident_char = _{ 'a'..'z' | 'A'..'Z' | '0'..'9' | "_" }
-ident      =  {
+ident      =  @{
     ('a'..'z' | 'A'..'Z') ~ ident_char* |
     "_" ~ ident_char+
 }
@@ -92,5 +92,17 @@ call  =  { ident ~ paren_open ~ args? ~ paren_close }
 
 term = { op_unary* ~ value ~ (dot ~ call)* }
 expr = { term ~ (op_infix ~ term)* }
+
+
+type_def = { ident ~ ":" ~ ident }
+return_type = { "->" ~ ident }
+
+arg_list = { type_def ~ (comma ~  type_def)* }
+fn_def = { "fn" ~ ident ~ paren_open ~ arg_list? ~ paren_close ~ return_type? }
+fn_body = { expr }
+
+function = { fn_def ~ "{" ~ fn_body ~ "}"}
+
+statement = _{ function }
 
 WHITESPACE = _{ " " | "\t" }

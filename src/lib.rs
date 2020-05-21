@@ -54,3 +54,22 @@ fn function_call() {
         }]
     );
 }
+
+#[test]
+fn function_def() {
+    let x = parse(r#"fn f(x: int, y: bool) { 1 + 2 }"#);
+    assert_eq!(
+        x,
+        vec![AstNode::BinaryExpr {
+            left: Box::new(AstNode::FunctionCall {
+                left: None,
+                name: "f".to_string(),
+                args: vec![AstNode::IntLiteral { val: 2 }, AstNode::BoolLiteral { val: true }]
+            }),
+            right: Box::new(AstNode::IntLiteral { val: 5 }),
+            operator: '+'
+        }]
+    );
+}
+
+

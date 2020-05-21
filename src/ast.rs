@@ -185,7 +185,7 @@ fn ast(x: Pair<Rule>) -> AstNode {
 }
 
 pub fn parse(s: &str) -> Vec<AstNode> {
-    let parsed: Vec<Pair<Rule>> = SigurdParser::parse(Rule::expr, &s.trim_end())
+    let parsed: Vec<Pair<Rule>> = SigurdParser::parse(Rule::statement, &s.trim_end())
         .expect("unsuccessful parse")
         .collect();
 
