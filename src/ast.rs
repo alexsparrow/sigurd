@@ -68,12 +68,16 @@ where
 
 fn parse_func_call(x: Pair<Rule>) -> AstNode {
     let pairs = x.into_inner().collect::<Vec<Pair<Rule>>>();
-
     let ident = pairs.iter().find(|p| p.as_rule() == Rule::ident).unwrap();
+    let args = pairs
+        .iter()
+        .find(|p| p.as_rule() == Rule::args)
+        .unwrap()
+        .clone();
 
     return AstNode::FunctionCall {
         left: None,
-        args: vec![],
+        args: args.into_inner().map(|p| ast(p)).collect(),
         name: ident.as_str().into(),
     };
 }

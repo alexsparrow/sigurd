@@ -86,7 +86,7 @@ value = {
 
 dot   =  { "." }
 comma =  { "," }
-args  = _{ expr ~ (comma ~ expr)* }
+args  = { expr ~ (comma ~ expr)* }
 call  =  { ident ~ paren_open ~ args? ~ paren_close }
 
 term = { op_unary* ~ value ~ (dot ~ call)* }
