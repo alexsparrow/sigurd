@@ -22,3 +22,9 @@ fn does_stuff() {
     let x = parse("x + 1.3 + 2.0 / 5.0");
     assert_eq!(x, vec![]);
 }
+
+#[test]
+fn function_call() {
+    let x = parse("f(2) + 5");
+    assert_eq!(x, vec![]);
+}

@@ -38,22 +38,58 @@ ident      =  {
 }
 
 // Expressions
-operation = _{ add | subtract | multiply | divide | power }
-    add      = { "+" }
-    subtract = { "-" }
-    multiply = { "*" }
-    divide   = { "/" }
-    power    = { "^" }
+op_unary_minus =  { "-" }
+op_unary_not   =  { "!" }
+op_unary       = _{
+    op_unary_minus |
+    op_unary_not
+}
 
-basic_expr = _{ literal | ident }
+op_plus          =  { "+" }
+op_minus         =  { "-" }
+op_times         =  { "*" }
+op_divide        =  { "/" }
+op_and           =  { "&&" }
+op_or            =  { "||" }
+op_greater       =  { ">" }
+op_greater_equal =  { ">=" }
+op_lower         =  { "<" }
+op_lower_equal   =  { "<=" }
+op_equal         =  { "==" }
+op_power         =  { "^" }
+op_infix         = _{
+    op_plus |
+    op_minus |
+    op_times |
+    op_divide |
+    op_and |
+    op_or |
+    op_greater |
+    op_greater_equal |
+    op_lower |
+    op_lower_equal |
+    op_equal
+}
 
-operator_expr = { term ~ (operation ~ term)* }
-term = _{ basic_expr | "(" ~ operator_expr ~ ")" }
+paren_open  = { "(" }
+paren_close = { ")" }
 
-expr = _{ operator_expr | basic_expr }
+value = {
+    float | // float comes before int since they overlap
+    int |
+    //chr |
+    string |
+    call |
+    ident |
+    paren_open ~ expr ~ paren_close
+}
 
+dot   =  { "." }
+comma =  { "," }
+args  = _{ expr ~ (comma ~ expr)* }
+call  =  { ident ~ paren_open ~ args? ~ paren_close }
+
+term = { op_unary* ~ value ~ (dot ~ call)* }
+expr = { term ~ (op_infix ~ term)* }
 
 WHITESPACE = _{ " " | "\t" }
-
-
-
