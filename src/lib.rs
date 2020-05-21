@@ -7,7 +7,7 @@ extern crate pest_derive;
 #[macro_use]
 extern crate lazy_static;
 
-mod ast;
+pub mod ast;
 
 const program: &str = r#"
     let x = 1
