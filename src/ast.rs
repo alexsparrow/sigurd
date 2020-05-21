@@ -8,7 +8,7 @@ use std::{fmt::Debug, str::FromStr};
 
 #[derive(Parser)]
 #[grammar = "sigurd.pest"]
-pub struct SigardParser;
+pub struct SigurdParser;
 
 lazy_static! {
     static ref PREC_CLIMBER: PrecClimber<Rule> = {
@@ -58,7 +58,7 @@ fn ast(x: Pair<Rule>) -> Option<AstNode> {
 }
 
 pub fn parse(s: &str) -> Vec<Option<AstNode>> {
-    let parsed: Vec<Pair<Rule>> = SigardParser::parse(Rule::expr, &s.trim_end())
+    let parsed: Vec<Pair<Rule>> = SigurdParser::parse(Rule::expr, &s.trim_end())
         .expect("unsuccessful parse")
         .collect();
 
