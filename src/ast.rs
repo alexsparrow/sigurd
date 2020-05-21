@@ -131,9 +131,13 @@ fn eval(expression: Pairs<Rule>) -> AstNode {
             Rule::float => AstNode::FloatLiteral {
                 val: parse_literal::<f64>(&pair),
             },
+            Rule::bool => AstNode::BoolLiteral {
+                val: parse_literal::<bool>(&pair),
+            },
             Rule::ident => AstNode::Ident {
                 name: pair.as_str().trim().into(),
             },
+
             Rule::term => parse_term(pair.into_inner()),
             _ => {
                 println!("Unhandled: {:?}", pair);
@@ -163,6 +167,9 @@ fn ast(x: Pair<Rule>) -> AstNode {
         },
         Rule::float => AstNode::FloatLiteral {
             val: parse_literal::<f64>(&x),
+        },
+        Rule::bool => AstNode::BoolLiteral {
+            val: parse_literal::<bool>(&x),
         },
         Rule::ident => AstNode::Ident {
             name: x.as_str().trim().into(),

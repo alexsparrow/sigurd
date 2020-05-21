@@ -18,7 +18,7 @@ const program: &str = r#"
 "#;
 
 #[test]
-fn does_stuff() {
+fn basic_expression() {
     let x = parse("x + 1.3 + 2.0 / 5.0");
     assert_eq!(
         x,
@@ -40,14 +40,14 @@ fn does_stuff() {
 
 #[test]
 fn function_call() {
-    let x = parse("f(2) + 5");
+    let x = parse("f(2, true) + 5");
     assert_eq!(
         x,
         vec![AstNode::BinaryExpr {
             left: Box::new(AstNode::FunctionCall {
                 left: None,
                 name: "f".to_string(),
-                args: vec![AstNode::IntLiteral { val: 2 }]
+                args: vec![AstNode::IntLiteral { val: 2 }, AstNode::BoolLiteral { val: true }]
             }),
             right: Box::new(AstNode::IntLiteral { val: 5 }),
             operator: '+'

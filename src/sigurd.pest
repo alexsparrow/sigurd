@@ -77,6 +77,7 @@ paren_close = { ")" }
 value = {
     float | // float comes before int since they overlap
     int |
+    bool |
     //chr |
     string |
     call |
@@ -85,7 +86,7 @@ value = {
 }
 
 dot   =  { "." }
-comma =  { "," }
+comma =  _{ "," }
 args  = { expr ~ (comma ~ expr)* }
 call  =  { ident ~ paren_open ~ args? ~ paren_close }
 
