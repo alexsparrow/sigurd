@@ -99,10 +99,16 @@ return_type = { "->" ~ ident }
 
 arg_list = { type_def ~ (comma ~  type_def)* }
 fn_def = { "fn" ~ ident ~ paren_open ~ arg_list? ~ paren_close ~ return_type? }
-fn_body = { expr }
+
+statement = _{ expr }
+fn_body = { (statement ~ ";")* }
 
 function = { fn_def ~ "{" ~ fn_body ~ "}"}
 
-statement = _{ function }
+top_level_statement = _{ function }
 
-WHITESPACE = _{ " " | "\t" }
+// See https://github.com/pest-parser/pest/issues/304
+eoi = _{ !ANY }
+program = _{ SOI ~ top_level_statement* ~ eoi }
+
+WHITESPACE = _{ " " | "\t" | "\n" }

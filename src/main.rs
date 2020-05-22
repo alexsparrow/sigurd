@@ -7,6 +7,6 @@ fn main() {
 
     let contents = fs::read_to_string(fname).expect("Something went wrong reading the file");
 
-    let ast = ast::parse(&contents);
+    let ast = ast::parse_program(&contents);
     println!("AST: {:?}", ast.first());
 }

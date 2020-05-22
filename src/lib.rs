@@ -1,4 +1,4 @@
-use ast::{parse, AstNode};
+use ast::{parse_expr, parse_program, AstNode};
 
 extern crate pest;
 #[macro_use]
@@ -19,7 +19,7 @@ const program: &str = r#"
 
 #[test]
 fn basic_expression() {
-    let x = parse("x + 1.3 + 2.0 / 5.0");
+    let x = parse_expr("x + 1.3 + 2.0 / 5.0");
     assert_eq!(
         x,
         vec![AstNode::BinaryExpr {
@@ -40,14 +40,17 @@ fn basic_expression() {
 
 #[test]
 fn function_call() {
-    let x = parse("f(2, true) + 5");
+    let x = parse_expr("f(2, true) + 5");
     assert_eq!(
         x,
         vec![AstNode::BinaryExpr {
             left: Box::new(AstNode::FunctionCall {
                 left: None,
                 name: "f".to_string(),
-                args: vec![AstNode::IntLiteral { val: 2 }, AstNode::BoolLiteral { val: true }]
+                args: vec![
+                    AstNode::IntLiteral { val: 2 },
+                    AstNode::BoolLiteral { val: true }
+                ]
             }),
             right: Box::new(AstNode::IntLiteral { val: 5 }),
             operator: '+'
@@ -57,19 +60,37 @@ fn function_call() {
 
 #[test]
 fn function_def() {
-    let x = parse(r#"fn f(x: int, y: bool) { 1 + 2 }"#);
+    let x = parse_program(
+        r#"
+    fn f(x: int, y: bool) { 
+        f(2, true) + 5;
+        2 + 3;
+    }
+    "#,
+    );
     assert_eq!(
         x,
-        vec![AstNode::BinaryExpr {
-            left: Box::new(AstNode::FunctionCall {
-                left: None,
-                name: "f".to_string(),
-                args: vec![AstNode::IntLiteral { val: 2 }, AstNode::BoolLiteral { val: true }]
-            }),
-            right: Box::new(AstNode::IntLiteral { val: 5 }),
-            operator: '+'
+        vec![AstNode::Function {
+            name: "f".into(),
+            body: vec![
+                AstNode::BinaryExpr {
+                    left: Box::new(AstNode::FunctionCall {
+                        left: None,
+                        name: "f".to_string(),
+                        args: vec![
+                            AstNode::IntLiteral { val: 2 },
+                            AstNode::BoolLiteral { val: true }
+                        ]
+                    }),
+                    right: Box::new(AstNode::IntLiteral { val: 5 }),
+                    operator: '+'
+                },
+                AstNode::BinaryExpr {
+                    left: Box::new(AstNode::IntLiteral { val: 2 }),
+                    right: Box::new(AstNode::IntLiteral { val: 3 }),
+                    operator: '+'
+                }
+            ]
         }]
     );
 }
-
-

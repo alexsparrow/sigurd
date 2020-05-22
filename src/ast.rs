@@ -54,6 +54,11 @@ pub enum AstNode {
         name: String,
         args: Vec<AstNode>,
     },
+    Function {
+        name: String,
+        // TODO: args
+        body: Vec<AstNode>,
+    },
 }
 
 fn parse_literal<T: FromStr>(x: &Pair<Rule>) -> T
@@ -64,6 +69,33 @@ where
         .trim()
         .parse::<T>()
         .expect(format!("Can't parse literal: {}", x.as_str()).as_ref())
+}
+
+fn parse_function(x: Pair<Rule>) -> AstNode {
+    let pairs = x.into_inner().collect::<Vec<Pair<Rule>>>();
+
+    let def = pairs
+        .iter()
+        .find(|p| p.as_rule() == Rule::fn_def)
+        .unwrap()
+        .clone();
+    let fn_name = def
+        .into_inner()
+        .find(|p| p.as_rule() == Rule::ident)
+        .unwrap()
+        .as_str()
+        .trim();
+
+    let body = pairs
+        .iter()
+        .find(|p| p.as_rule() == Rule::fn_body)
+        .unwrap()
+        .clone();
+
+    return AstNode::Function {
+        name: fn_name.to_string(),
+        body: body.into_inner().map(|p| ast(p)).collect(),
+    };
 }
 
 fn parse_func_call(x: Pair<Rule>) -> AstNode {
@@ -175,6 +207,7 @@ fn ast(x: Pair<Rule>) -> AstNode {
             name: x.as_str().trim().into(),
         },
         Rule::call => parse_func_call(x),
+        Rule::function => parse_function(x),
         _ => {
             println!("Unhandled {:#?}", x);
             unreachable!("OO")
@@ -184,8 +217,8 @@ fn ast(x: Pair<Rule>) -> AstNode {
     y
 }
 
-pub fn parse(s: &str) -> Vec<AstNode> {
-    let parsed: Vec<Pair<Rule>> = SigurdParser::parse(Rule::statement, &s.trim_end())
+pub fn parse(s: &str, rule: Rule) -> Vec<AstNode> {
+    let parsed: Vec<Pair<Rule>> = SigurdParser::parse(rule, &s.trim_end())
         .expect("unsuccessful parse")
         .collect();
 
@@ -195,4 +228,12 @@ pub fn parse(s: &str) -> Vec<AstNode> {
         .iter()
         .map(|x| ast(x.clone()))
         .collect::<Vec<AstNode>>();
+}
+
+pub fn parse_program(s: &str) -> std::vec::Vec<AstNode> {
+    return parse(s, Rule::program);
+}
+
+pub fn parse_expr(s: &str) -> std::vec::Vec<AstNode> {
+    return parse(s, Rule::expr);
 }
