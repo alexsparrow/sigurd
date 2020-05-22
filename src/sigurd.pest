@@ -100,7 +100,9 @@ return_type = { "->" ~ ident }
 arg_list = { type_def ~ (comma ~  type_def)* }
 fn_def = { "fn" ~ ident ~ paren_open ~ arg_list? ~ paren_close ~ return_type? }
 
-statement = _{ expr }
+let_binding = { "let" ~ ident ~ "=" ~ expr}
+
+statement = _{ let_binding | expr }
 fn_body = { (statement ~ ";")* }
 
 function = { fn_def ~ "{" ~ fn_body ~ "}"}

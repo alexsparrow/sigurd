@@ -54,6 +54,10 @@ pub enum AstNode {
         name: String,
         args: Vec<AstNode>,
     },
+    LetBinding {
+        name: Box<AstNode>,
+        expr: Box<AstNode>,
+    },
     Function {
         name: String,
         // TODO: args
@@ -153,6 +157,25 @@ fn parse_term(x: Pairs<Rule>) -> AstNode {
     y
 }
 
+fn parse_let_binding(x: Pair<Rule>) -> AstNode {
+    let inner = x.into_inner().collect::<Vec<Pair<Rule>>>();
+    let ident = ast(inner
+        .iter()
+        .find(|p| p.as_rule() == Rule::ident)
+        .unwrap()
+        .clone());
+    let expr = ast(inner
+        .iter()
+        .find(|p| p.as_rule() == Rule::expr)
+        .unwrap()
+        .clone());
+
+    return AstNode::LetBinding {
+        name: ident.into(),
+        expr: Box::new(expr),
+    };
+}
+
 fn eval(expression: Pairs<Rule>) -> AstNode {
     PREC_CLIMBER.climb(
         expression,
@@ -207,6 +230,7 @@ fn ast(x: Pair<Rule>) -> AstNode {
             name: x.as_str().trim().into(),
         },
         Rule::call => parse_func_call(x),
+        Rule::let_binding => parse_let_binding(x),
         Rule::function => parse_function(x),
         _ => {
             println!("Unhandled {:#?}", x);

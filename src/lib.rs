@@ -63,6 +63,7 @@ fn function_def() {
     let x = parse_program(
         r#"
     fn f(x: int, y: bool) { 
+        let x = 1;
         f(2, true) + 5;
         2 + 3;
     }
@@ -73,6 +74,10 @@ fn function_def() {
         vec![AstNode::Function {
             name: "f".into(),
             body: vec![
+                AstNode::LetBinding {
+                    name: Box::new(AstNode::Ident { name: "x".into() }),
+                    expr: Box::new(AstNode::IntLiteral { val: 1 })
+                },
                 AstNode::BinaryExpr {
                     left: Box::new(AstNode::FunctionCall {
                         left: None,
