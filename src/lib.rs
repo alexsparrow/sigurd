@@ -26,14 +26,14 @@ fn basic_expression() {
             left: Box::new(AstNode::BinaryExpr {
                 left: Box::new(AstNode::Ident { name: "x".into() }),
                 right: Box::new(AstNode::FloatLiteral { val: 1.3 }),
-                operator: '+'
+                operator: "+".into()
             }),
             right: Box::new(AstNode::BinaryExpr {
                 left: Box::new(AstNode::FloatLiteral { val: 2.0 }),
                 right: Box::new(AstNode::FloatLiteral { val: 5.0 }),
-                operator: '/'
+                operator: "/".into()
             }),
-            operator: '+'
+            operator: "+".into()
         }]
     );
 }
@@ -53,7 +53,7 @@ fn function_call() {
                 ]
             }),
             right: Box::new(AstNode::IntLiteral { val: 5 }),
-            operator: '+'
+            operator: "+".into()
         }]
     );
 }
@@ -88,14 +88,47 @@ fn function_def() {
                         ]
                     }),
                     right: Box::new(AstNode::IntLiteral { val: 5 }),
-                    operator: '+'
+                    operator: "+".into()
                 },
                 AstNode::BinaryExpr {
                     left: Box::new(AstNode::IntLiteral { val: 2 }),
                     right: Box::new(AstNode::IntLiteral { val: 3 }),
-                    operator: '+'
+                    operator: "+".into()
                 }
             ]
+        }]
+    );
+}
+
+#[test]
+fn if_statement() {
+    let x = parse_program(
+        r#"
+    fn f(x: int, y: bool) { 
+        if x == 1 {
+            print("Hello");
+        };
+    }
+    "#,
+    );
+    assert_eq!(
+        x,
+        vec![AstNode::Function {
+            name: "f".into(),
+            body: vec![AstNode::If {
+                condition: Box::new(AstNode::BinaryExpr {
+                    left: Box::new(AstNode::Ident { name: "x".into() }),
+                    right: Box::new(AstNode::IntLiteral { val: 1 }),
+                    operator: "==".into()
+                }),
+                body: vec![AstNode::FunctionCall {
+                    left: None,
+                    name: "print".into(),
+                    args: vec![AstNode::StringLiteral {
+                        val: "\"Hello\"".into()
+                    }]
+                }]
+            }]
         }]
     );
 }

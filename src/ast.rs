@@ -19,6 +19,7 @@ lazy_static! {
             Operator::new(op_plus, Assoc::Left) | Operator::new(op_minus, Left),
             Operator::new(op_times, Left) | Operator::new(op_divide, Left),
             Operator::new(op_power, Right),
+            Operator::new(op_equal, Assoc::Left),
         ])
     };
 }
@@ -47,12 +48,20 @@ pub enum AstNode {
     BinaryExpr {
         left: Box<AstNode>,
         right: Box<AstNode>,
-        operator: char,
+        operator: String,
     },
     FunctionCall {
         left: Option<Box<AstNode>>,
         name: String,
         args: Vec<AstNode>,
+    },
+    If {
+        condition: Box<AstNode>,
+        body: Vec<AstNode>,
+    },
+    While {
+        condition: Box<AstNode>,
+        body: Vec<AstNode>,
     },
     LetBinding {
         name: Box<AstNode>,
@@ -176,6 +185,42 @@ fn parse_let_binding(x: Pair<Rule>) -> AstNode {
     };
 }
 
+fn parse_body(x: Pair<Rule>) -> Vec<AstNode> {
+    return x.into_inner().map(|p| ast(p)).collect::<Vec<AstNode>>();
+}
+
+fn parse_if_statement(x: Pair<Rule>) -> AstNode {
+    let inner = x.clone().into_inner().collect::<Vec<Pair<Rule>>>();
+    let expr = ast(inner
+        .iter()
+        .find(|p| p.as_rule() == Rule::expr)
+        .unwrap()
+        .clone());
+
+    let body = inner.iter().find(|p| p.as_rule() == Rule::fn_body).unwrap();
+
+    return AstNode::If {
+        condition: Box::new(expr),
+        body: parse_body(body.clone()),
+    };
+}
+
+fn parse_while_statement(x: Pair<Rule>) -> AstNode {
+    let inner = x.clone().into_inner().collect::<Vec<Pair<Rule>>>();
+    let expr = ast(inner
+        .iter()
+        .find(|p| p.as_rule() == Rule::expr)
+        .unwrap()
+        .clone());
+
+    let body = inner.iter().find(|p| p.as_rule() == Rule::fn_body).unwrap();
+
+    return AstNode::While {
+        condition: Box::new(expr),
+        body: parse_body(body.clone()),
+    };
+}
+
 fn eval(expression: Pairs<Rule>) -> AstNode {
     PREC_CLIMBER.climb(
         expression,
@@ -200,11 +245,11 @@ fn eval(expression: Pairs<Rule>) -> AstNode {
             }
         },
         |lhs: AstNode, op: Pair<Rule>, rhs: AstNode| match op.as_rule() {
-            Rule::op_plus | Rule::op_minus | Rule::op_times | Rule::op_divide => {
+            Rule::op_plus | Rule::op_minus | Rule::op_times | Rule::op_divide | Rule::op_equal => {
                 AstNode::BinaryExpr {
                     left: lhs.into(),
                     right: rhs.into(),
-                    operator: op.as_str().chars().next().unwrap(),
+                    operator: op.as_str().into(),
                 }
             }
             _ => unreachable!(format!("{:?}", op.as_rule())),
@@ -229,8 +274,13 @@ fn ast(x: Pair<Rule>) -> AstNode {
         Rule::ident => AstNode::Ident {
             name: x.as_str().trim().into(),
         },
+        Rule::string => AstNode::StringLiteral {
+            val: x.as_str().trim().into(),
+        },
         Rule::call => parse_func_call(x),
         Rule::let_binding => parse_let_binding(x),
+        Rule::if_statement => parse_if_statement(x),
+        Rule::while_statement => parse_while_statement(x),
         Rule::function => parse_function(x),
         _ => {
             println!("Unhandled {:#?}", x);
