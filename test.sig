@@ -1,7 +1,3 @@
-fn print(x: string) {
-  
-}
-
 fn foo(x: int) {
   let y = x + 1
   y
