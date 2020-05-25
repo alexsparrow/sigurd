@@ -1,4 +1,4 @@
-use sigard::{interp::execute, ast};
+use sigard::{ast, interp::execute};
 use std::{env, fs};
 
 fn main() {

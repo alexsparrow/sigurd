@@ -9,6 +9,6 @@ fn foo(x: int) {
 
 fn main(args: string) {
   let x = 1
-  print("foo returns {}", foo(41))
+  print("foo returns ", foo(41))
 }
 

@@ -74,6 +74,7 @@ fn function_def() {
         x,
         vec![AstNode::Function {
             name: "f".into(),
+            arg_names: vec!["x".into(), "y".into()],
             body: vec![
                 AstNode::LetBinding {
                     name: Box::new(AstNode::Ident { name: "x".into() }),
@@ -120,34 +121,34 @@ fn if_statement() {
         x,
         vec![AstNode::Function {
             name: "f".into(),
-            body: vec![AstNode::If {
-                condition: Box::new(AstNode::BinaryExpr {
-                    left: Box::new(AstNode::Ident { name: "x".into() }),
-                    right: Box::new(AstNode::IntLiteral { val: 1 }),
-                    operator: "==".into()
-                }),
-                body: vec![AstNode::FunctionCall {
-                    left: None,
-                    name: "print".into(),
-                    args: vec![AstNode::StringLiteral {
-                        val: "\"Hello\"".into()
+            arg_names: vec!["x".into(), "y".into()],
+            body: vec![
+                AstNode::If {
+                    condition: Box::new(AstNode::BinaryExpr {
+                        left: Box::new(AstNode::Ident { name: "x".into() }),
+                        right: Box::new(AstNode::IntLiteral { val: 1 }),
+                        operator: "==".into()
+                    }),
+                    body: vec![AstNode::FunctionCall {
+                        left: None,
+                        name: "print".into(),
+                        args: vec![AstNode::StringLiteral {
+                            val: "Hello".into()
+                        }]
                     }]
-                }]
-            },
-AstNode::If {
-                condition: Box::new(AstNode::BinaryExpr {
-                    left: Box::new(AstNode::Ident { name: "x".into() }),
-                    right: Box::new(AstNode::IntLiteral { val: 2 }),
-                    operator: "==".into()
-                }),
-                body: vec![AstNode::FunctionCall {
-                    left: None,
-                    name: "print".into(),
-                    args: vec![AstNode::StringLiteral {
-                        val: "\"NOO\"".into()
+                },
+                AstNode::If {
+                    condition: Box::new(AstNode::BinaryExpr {
+                        left: Box::new(AstNode::Ident { name: "x".into() }),
+                        right: Box::new(AstNode::IntLiteral { val: 2 }),
+                        operator: "==".into()
+                    }),
+                    body: vec![AstNode::FunctionCall {
+                        left: None,
+                        name: "print".into(),
+                        args: vec![AstNode::StringLiteral { val: "NOO".into() }]
                     }]
-                }]
-            }
+                }
             ]
         }]
     );

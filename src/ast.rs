@@ -69,7 +69,7 @@ pub enum AstNode {
     },
     Function {
         name: String,
-        // TODO: args
+        arg_names: Vec<String>,
         body: Vec<AstNode>,
     },
 }
@@ -87,17 +87,31 @@ where
 fn parse_function(x: Pair<Rule>) -> AstNode {
     let pairs = x.into_inner().collect::<Vec<Pair<Rule>>>();
 
-    let def = pairs
+    let def_inner = pairs
         .iter()
         .find(|p| p.as_rule() == Rule::fn_def)
         .unwrap()
-        .clone();
-    let fn_name = def
+        .clone()
         .into_inner()
+        .collect::<Vec<Pair<Rule>>>();
+
+    let fn_name = def_inner
+        .iter()
         .find(|p| p.as_rule() == Rule::ident)
         .unwrap()
         .as_str()
         .trim();
+
+    let args = def_inner
+        .iter()
+        .find(|p| p.as_rule() == Rule::arg_list)
+        .unwrap()
+        .clone();
+
+    let arg_names = args
+        .into_inner()
+        .map(|p| p.into_inner().next().unwrap().as_str().into())
+        .collect::<Vec<String>>();
 
     let body = pairs
         .iter()
@@ -107,6 +121,7 @@ fn parse_function(x: Pair<Rule>) -> AstNode {
 
     return AstNode::Function {
         name: fn_name.to_string(),
+        arg_names,
         body: body.into_inner().map(|p| ast(p)).collect(),
     };
 }
@@ -258,7 +273,7 @@ fn ast(x: Pair<Rule>) -> AstNode {
 
         Rule::term => parse_term(x.into_inner()),
         Rule::string => AstNode::StringLiteral {
-            val: x.as_str().trim().into(),
+            val: x.as_str().trim().trim_matches('"').into(),
         },
         Rule::call => parse_func_call(x),
         Rule::let_binding => parse_let_binding(x),
@@ -266,8 +281,7 @@ fn ast(x: Pair<Rule>) -> AstNode {
         Rule::while_statement => parse_while_statement(x),
         Rule::function => parse_function(x),
         _ => {
-            println!("Unhandled {:#?}", x);
-            unreachable!("OO")
+            panic!(format!("Unhandled {:#?}", x));
         }
     };
     y
@@ -278,7 +292,7 @@ pub fn parse(s: &str, rule: Rule) -> Vec<AstNode> {
         .expect("unsuccessful parse")
         .collect();
 
-    println!("{:#?}", parsed);
+    // println!("{:#?}", parsed);
 
     return parsed
         .iter()
