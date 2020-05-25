@@ -9,17 +9,17 @@ WIP syntax example:
 
 ```
 fn foo(x: int) -> {
-  let y = x + 1;
+  let y = x + 1
 
   if (y == 42) {
-    print("Good choice");
-  };
+    print("Good choice")
+  }
 
   y;
 }
 
 fn main(args: string[]) {
-  print("foo returns {}", foo(41));
+  print("foo returns {}", foo(41))
 }
 
 ```
