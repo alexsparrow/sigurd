@@ -8,6 +8,7 @@ extern crate pest_derive;
 extern crate lazy_static;
 
 pub mod ast;
+pub mod interp;
 
 const program: &str = r#"
     let x = 1
@@ -65,7 +66,7 @@ fn function_def() {
     fn f(x: int, y: bool) { 
         let x = 1;
         f(2, true) + 5;
-        2 + 3;
+        2 + 3
     }
     "#,
     );
@@ -107,7 +108,11 @@ fn if_statement() {
     fn f(x: int, y: bool) { 
         if x == 1 {
             print("Hello");
-        };
+        }
+
+        if x == 2 {
+            print("NOO");
+        }
     }
     "#,
     );
@@ -128,7 +133,22 @@ fn if_statement() {
                         val: "\"Hello\"".into()
                     }]
                 }]
-            }]
+            },
+AstNode::If {
+                condition: Box::new(AstNode::BinaryExpr {
+                    left: Box::new(AstNode::Ident { name: "x".into() }),
+                    right: Box::new(AstNode::IntLiteral { val: 2 }),
+                    operator: "==".into()
+                }),
+                body: vec![AstNode::FunctionCall {
+                    left: None,
+                    name: "print".into(),
+                    args: vec![AstNode::StringLiteral {
+                        val: "\"NOO\"".into()
+                    }]
+                }]
+            }
+            ]
         }]
     );
 }

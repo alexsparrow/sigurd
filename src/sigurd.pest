@@ -105,7 +105,7 @@ if_statement = { "if" ~ expr ~ "{" ~ fn_body ~ "}"}
 while_statement = { "while" ~ expr ~ "{" ~ fn_body ~ "}"}
 
 statement = _{ let_binding | if_statement | while_statement | expr }
-fn_body = { (statement ~ ";")* }
+fn_body = { (statement ~ ";"?)* }
 
 function = { fn_def ~ "{" ~ fn_body ~ "}"}
 

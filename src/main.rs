@@ -1,4 +1,4 @@
-use sigard::ast;
+use sigard::{interp::execute, ast};
 use std::{env, fs};
 
 fn main() {
@@ -8,5 +8,5 @@ fn main() {
     let contents = fs::read_to_string(fname).expect("Something went wrong reading the file");
 
     let ast = ast::parse_program(&contents);
-    println!("AST: {:?}", ast.first());
+    execute(ast);
 }

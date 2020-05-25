@@ -81,7 +81,7 @@ where
     x.as_str()
         .trim()
         .parse::<T>()
-        .expect(format!("Can't parse literal: {}", x.as_str()).as_ref())
+        .expect(format!("Can't parse literal: \"{}\"", x.as_str()).as_ref())
 }
 
 fn parse_function(x: Pair<Rule>) -> AstNode {
@@ -224,26 +224,7 @@ fn parse_while_statement(x: Pair<Rule>) -> AstNode {
 fn eval(expression: Pairs<Rule>) -> AstNode {
     PREC_CLIMBER.climb(
         expression,
-        |pair: Pair<Rule>| match pair.as_rule() {
-            Rule::int => AstNode::IntLiteral {
-                val: parse_literal::<i64>(&pair),
-            },
-            Rule::float => AstNode::FloatLiteral {
-                val: parse_literal::<f64>(&pair),
-            },
-            Rule::bool => AstNode::BoolLiteral {
-                val: parse_literal::<bool>(&pair),
-            },
-            Rule::ident => AstNode::Ident {
-                name: pair.as_str().trim().into(),
-            },
-
-            Rule::term => parse_term(pair.into_inner()),
-            _ => {
-                println!("Unhandled: {:?}", pair);
-                unreachable!()
-            }
-        },
+        |pair: Pair<Rule>| ast(pair),
         |lhs: AstNode, op: Pair<Rule>, rhs: AstNode| match op.as_rule() {
             Rule::op_plus | Rule::op_minus | Rule::op_times | Rule::op_divide | Rule::op_equal => {
                 AstNode::BinaryExpr {
@@ -274,6 +255,8 @@ fn ast(x: Pair<Rule>) -> AstNode {
         Rule::ident => AstNode::Ident {
             name: x.as_str().trim().into(),
         },
+
+        Rule::term => parse_term(x.into_inner()),
         Rule::string => AstNode::StringLiteral {
             val: x.as_str().trim().into(),
         },
@@ -287,7 +270,6 @@ fn ast(x: Pair<Rule>) -> AstNode {
             unreachable!("OO")
         }
     };
-    println!("{:?} -> {:?}", z, y);
     y
 }
 
