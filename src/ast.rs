@@ -253,11 +253,20 @@ fn eval(expression: Pairs<Rule>) -> AstNode {
     )
 }
 
+fn parse_value(x: Pair<Rule>) -> AstNode {
+    let inner = x.into_inner().collect::<Vec<Pair<Rule>>>();
+
+    match inner.first().unwrap().as_rule() {
+        Rule::paren_open => ast(inner.get(1).unwrap().clone()),
+        _ => ast(inner.first().unwrap().clone()),
+    }
+}
+
 fn ast(x: Pair<Rule>) -> AstNode {
     let z = x.clone();
     let y = match x.as_rule() {
         Rule::expr => eval(x.into_inner()),
-        Rule::value => ast(x.into_inner().next().unwrap()),
+        Rule::value => parse_value(x),
         Rule::int => AstNode::IntLiteral {
             val: parse_literal::<i64>(&x),
         },

@@ -1,42 +1,7 @@
 use crate::ast::AstNode;
+use crate::interp::stdlib::{register_stdlib, STDLIB};
+use crate::interp::value::Value;
 use std::{collections::HashMap, ops::Add};
-
-#[derive(Clone)]
-enum Value {
-    Null,
-    Function { node: AstNode },
-    StdLibStub { func: StdLibFunc },
-    Int { val: i64 },
-    String { val: String },
-}
-
-impl Add for Value {
-    fn add(self, other: Self) -> Self {
-        match self {
-            Value::Int { val: valA } => match other {
-                Value::Int { val: valB } => Value::Int { val: valA + valB },
-                _ => unimplemented!(),
-            },
-            _ => unimplemented!(),
-        }
-    }
-    type Output = Value;
-}
-
-type StdLibFunc = fn(&Vec<Value>) -> Value;
-
-fn _print(args: &Vec<Value>) -> Value {
-    args.iter().for_each(|a| match a {
-        Value::Int { val } => print!("{}", val),
-        Value::String { val } => print!("{}", val),
-        _ => unimplemented!(),
-    });
-    return Value::Null;
-}
-
-fn register_stdlib(globals: &mut HashMap<String, Value>) {
-    globals.insert("print".into(), Value::StdLibStub { func: _print });
-}
 
 pub fn execute(ast: Vec<AstNode>) {
     let mut functions: HashMap<String, Value> = HashMap::new();
@@ -64,7 +29,11 @@ fn run_function(globals: &HashMap<String, Value>, name: &str, args: &Vec<Value>)
             let mut new_scope = create_scope(node, args);
             interpret(node, &mut new_scope, globals)
         }
-        Some(Value::StdLibStub { func }) => func(args),
+        Some(Value::StdLibStub { func }) => {
+            STDLIB
+                .get(func)
+                .expect(format!("Function not found: {:?}", func).as_ref())(args)
+        }
         _ => panic!(format!("No function named {:?}", name)),
     }
 }
@@ -115,9 +84,27 @@ fn interpret(
             let right_value = interpret(right, locals, globals);
             match operator.as_str() {
                 "+" => left_value.add(right_value),
+                "==" => Value::Bool {
+                    val: left_value.eq(&right_value),
+                },
                 _ => unreachable!(),
             }
         }
+        AstNode::If { condition, body } => match interpret(condition, locals, globals) {
+            Value::Bool { val } => {
+                if val {
+                    let mut ret_val: Value = Value::Null;
+
+                    for expr in body {
+                        ret_val = interpret(expr, locals, globals);
+                    }
+                    ret_val
+                } else {
+                    Value::Null
+                }
+            }
+            _ => panic!("condition is not boolean valued"),
+        },
         AstNode::Ident { name } => match locals.get(name) {
             Some(x) => x.clone(),
             _ => panic!(format!("Undefined variable: {}", name)),
