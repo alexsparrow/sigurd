@@ -15,7 +15,7 @@ const RustComponent = dynamic({
 const SigurdRunner = ({ rustModule }) => {
   const [code, setCode] = useState(`
 fn foo(x: int) {
-  if x == 42
+  if x == 42 {
     "Cool number"
   } else {
     "Uncool number"
