@@ -32,6 +32,25 @@ fn main(args: string) {
 }"#;
 
     let ast = parse_program(program);
-    let ret_val = execute(ast);
+    let ret_val = execute(ast, "main", &vec![]);
     assert_eq!(ret_val, Value::Int { val: 1 });
+}
+
+#[test]
+fn fibonacci() {
+    let program = r#"
+
+fn fib(n: int) -> int {
+
+    if n <= 1 {
+        n
+    } else {
+        fib(n - 1) + fib(n-2)
+    }
+}
+    "#;
+
+    let ast = parse_program(program);
+    let fib10 = execute(ast, "fib", &vec![Value::Int { val: 10 }]);
+    assert_eq!(fib10, Value::Int { val: 55 })
 }

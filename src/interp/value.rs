@@ -1,7 +1,7 @@
 use crate::ast::AstNode;
-use std::ops::Add;
+use std::ops::{Sub, Add};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Value {
     Null,
     Function { node: AstNode },
@@ -26,6 +26,20 @@ impl Add for Value {
     }
     type Output = Value;
 }
+
+impl Sub for Value {
+    fn sub(self, other: Self) -> Self {
+        match self {
+            Value::Int { val: val_a } => match other {
+                Value::Int { val: val_b } => Value::Int { val: val_a - val_b },
+                _ => unimplemented!(),
+            },
+            _ => unimplemented!(),
+        }
+    }
+    type Output = Value;
+}
+
 
 pub fn as_bool(x: Value) -> bool {
     if let Value::Bool { val } = x {

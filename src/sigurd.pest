@@ -65,10 +65,10 @@ op_infix         = _{
     op_divide |
     op_and |
     op_or |
-    op_greater |
     op_greater_equal |
-    op_lower |
+    op_greater |
     op_lower_equal |
+    op_lower |
     op_equal |
     op_not_equal
 }

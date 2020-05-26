@@ -2,9 +2,9 @@ use super::value::{as_bool, unary_minus};
 use crate::ast::AstNode;
 use crate::interp::stdlib::{register_stdlib, STDLIB};
 use crate::interp::value::Value;
-use std::{collections::HashMap, ops::Add};
+use std::{collections::HashMap, ops::Add, cmp::Ordering};
 
-pub fn execute(ast: Vec<AstNode>) -> Value {
+pub fn execute(ast: Vec<AstNode>, func_name: &str, args: &Vec<Value>) -> Value {
     let mut functions: HashMap<String, Value> = HashMap::new();
     for node in ast.iter() {
         match node {
@@ -21,7 +21,7 @@ pub fn execute(ast: Vec<AstNode>) -> Value {
 
     register_stdlib(&mut functions);
 
-    run_function(&functions, "main", &vec![])
+    run_function(&functions, func_name, args)
 }
 
 fn run_function(globals: &HashMap<String, Value>, name: &str, args: &Vec<Value>) -> Value {
@@ -90,12 +90,16 @@ fn interpret(
             let left_value = interpret(left, locals, globals);
             let right_value = interpret(right, locals, globals);
             match operator.as_str() {
-                "+" => left_value.add(right_value),
+                "+" => left_value + right_value,
+                "-" => left_value - right_value,
                 "==" => Value::Bool {
                     val: left_value.eq(&right_value),
                 },
                 "!=" => Value::Bool {
                     val: !left_value.eq(&right_value),
+                },
+                "<=" => Value::Bool {
+                    val: left_value <= right_value
                 },
                 _ => unreachable!(),
             }

@@ -9,7 +9,7 @@ fn main() {
     let contents = fs::read_to_string(fname).expect("Something went wrong reading the file");
 
     let ast = ast::parse_program(&contents);
-    match execute(ast) {
+    match execute(ast, "main", &vec![]) {
         Value::Int { val } => std::process::exit(val.try_into().unwrap()),
         _ => std::process::exit(1),
     }

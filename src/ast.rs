@@ -21,11 +21,12 @@ lazy_static! {
             Operator::new(op_power, Right),
             Operator::new(op_equal, Assoc::Left),
             Operator::new(op_not_equal, Assoc::Left),
+            Operator::new(op_lower_equal, Assoc::Left),
         ])
     };
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, PartialOrd)]
 pub enum AstNode {
     IntLiteral {
         val: i64,
@@ -260,7 +261,8 @@ fn eval(expression: Pairs<Rule>) -> AstNode {
             | Rule::op_times
             | Rule::op_divide
             | Rule::op_equal
-            | Rule::op_not_equal => AstNode::BinaryExpr {
+            | Rule::op_not_equal
+            | Rule::op_lower_equal => AstNode::BinaryExpr {
                 left: lhs.into(),
                 right: rhs.into(),
                 operator: op.as_str().into(),
