@@ -1,7 +1,7 @@
 fn foo(x: int) {
   let y = x + 1
 
-  if (y == 42) {
+  if y == 42 {
     println("Hello")
   }
   
