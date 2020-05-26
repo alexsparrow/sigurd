@@ -17,8 +17,8 @@ pub enum Value {
 impl Add for Value {
     fn add(self, other: Self) -> Self {
         match self {
-            Value::Int { val: valA } => match other {
-                Value::Int { val: valB } => Value::Int { val: valA + valB },
+            Value::Int { val: val_a } => match other {
+                Value::Int { val: val_b } => Value::Int { val: val_a + val_b },
                 _ => unimplemented!(),
             },
             _ => unimplemented!(),

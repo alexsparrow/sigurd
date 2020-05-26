@@ -10,7 +10,7 @@ pub fn execute(ast: Vec<AstNode>) -> Value {
         match node {
             AstNode::Function {
                 name,
-                arg_names,
+                arg_names: _,
                 body: _,
             } => {
                 functions.insert(name.clone(), Value::Function { node: node.clone() });
@@ -143,9 +143,9 @@ fn interpret(
 
 fn create_scope(node: &AstNode, args: &Vec<Value>) -> std::collections::HashMap<String, Value> {
     if let AstNode::Function {
-        name,
+        name: _,
         arg_names,
-        body,
+        body: _,
     } = node
     {
         let mut scope: HashMap<String, Value> = HashMap::new();

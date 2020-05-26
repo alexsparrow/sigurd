@@ -4,7 +4,7 @@ use sigurd::interp::value::Value;
 
 #[test]
 fn basic_program() {
-    const program: &str = r#"fn foo(x: int) {
+    let program: &str = r#"fn foo(x: int) {
   let y = x + 1
 
   if y == 42 {

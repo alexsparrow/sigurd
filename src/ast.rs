@@ -280,8 +280,7 @@ fn parse_value(x: Pair<Rule>) -> AstNode {
 }
 
 fn ast(x: Pair<Rule>) -> AstNode {
-    let z = x.clone();
-    let y = match x.as_rule() {
+    match x.as_rule() {
         Rule::expr => eval(x.into_inner()),
         Rule::value => parse_value(x),
         Rule::int => AstNode::IntLiteral {
@@ -309,8 +308,7 @@ fn ast(x: Pair<Rule>) -> AstNode {
         _ => {
             panic!(format!("Unhandled {:#?}", x));
         }
-    };
-    y
+    }
 }
 
 pub fn parse(s: &str, rule: Rule) -> Vec<AstNode> {
