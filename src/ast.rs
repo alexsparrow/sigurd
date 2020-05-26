@@ -59,6 +59,7 @@ pub enum AstNode {
     If {
         condition: Box<AstNode>,
         body: Vec<AstNode>,
+        else_body: Vec<AstNode>,
     },
     While {
         condition: Box<AstNode>,
@@ -214,10 +215,22 @@ fn parse_if_statement(x: Pair<Rule>) -> AstNode {
         .clone());
 
     let body = inner.iter().find(|p| p.as_rule() == Rule::fn_body).unwrap();
+    let else_clause = inner.iter().find(|p| p.as_rule() == Rule::else_clause);
 
     return AstNode::If {
         condition: Box::new(expr),
         body: parse_body(body.clone()),
+        else_body: match else_clause {
+            Some(else_pair) => {
+                let else_body = else_pair
+                    .clone()
+                    .into_inner()
+                    .find(|p| p.as_rule() == Rule::fn_body)
+                    .unwrap();
+                parse_body(else_body)
+            }
+            _ => vec![],
+        },
     };
 }
 

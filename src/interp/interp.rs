@@ -100,12 +100,16 @@ fn interpret(
                 _ => unreachable!(),
             }
         }
-        AstNode::If { condition, body } => match interpret(condition, locals, globals) {
+        AstNode::If {
+            condition,
+            body,
+            else_body,
+        } => match interpret(condition, locals, globals) {
             Value::Bool { val } => {
                 if val {
                     run_body(body, locals, globals)
                 } else {
-                    Value::Null
+                    run_body(else_body, locals, globals)
                 }
             }
             _ => panic!("condition is not boolean valued"),

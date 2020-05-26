@@ -103,7 +103,8 @@ arg_list = { type_def ~ (comma ~  type_def)* }
 fn_def = { "fn" ~ ident ~ paren_open ~ arg_list? ~ paren_close ~ return_type? }
 
 let_binding = { "let" ~ ident ~ "=" ~ expr}
-if_statement = { "if" ~ expr ~ "{" ~ fn_body ~ "}"}
+else_clause = { "else" ~ "{" ~ fn_body ~ "}" }
+if_statement = { "if" ~ expr ~ "{" ~ fn_body ~ "}" ~ else_clause? }
 while_statement = { "while" ~ expr ~ "{" ~ fn_body ~ "}"}
 
 statement = _{ let_binding | if_statement | while_statement | expr }

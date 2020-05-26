@@ -3,6 +3,12 @@ fn foo(x: int) {
 
   if y == 42 {
     println("Hello")
+  } else {
+    println("Sad times")
+  }
+
+  if y == 1 {
+    println("But it's ok cause y is 1")
   }
 
   while y != 42 {
