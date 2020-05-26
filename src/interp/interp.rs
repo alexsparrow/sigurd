@@ -4,7 +4,7 @@ use crate::interp::stdlib::{register_stdlib, STDLIB};
 use crate::interp::value::Value;
 use std::{collections::HashMap, ops::Add};
 
-pub fn execute(ast: Vec<AstNode>) {
+pub fn execute(ast: Vec<AstNode>) -> Value {
     let mut functions: HashMap<String, Value> = HashMap::new();
     for node in ast.iter() {
         match node {
@@ -21,7 +21,7 @@ pub fn execute(ast: Vec<AstNode>) {
 
     register_stdlib(&mut functions);
 
-    run_function(&functions, "main", &vec![]);
+    run_function(&functions, "main", &vec![])
 }
 
 fn run_function(globals: &HashMap<String, Value>, name: &str, args: &Vec<Value>) -> Value {
