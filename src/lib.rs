@@ -135,7 +135,8 @@ fn if_statement() {
                         args: vec![AstNode::StringLiteral {
                             val: "Hello".into()
                         }]
-                    }]
+                    }],
+                    else_body: vec![]
                 },
                 AstNode::If {
                     condition: Box::new(AstNode::BinaryExpr {
@@ -147,7 +148,8 @@ fn if_statement() {
                         left: None,
                         name: "print".into(),
                         args: vec![AstNode::StringLiteral { val: "NOO".into() }]
-                    }]
+                    }],
+                    else_body: vec![]
                 }
             ]
         }]
