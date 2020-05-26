@@ -45,6 +45,19 @@ fn unwrap_ident(node: &AstNode) -> &str {
     }
 }
 
+fn run_body(
+    body: &Vec<AstNode>,
+    locals: &mut HashMap<String, Value>,
+    globals: &HashMap<String, Value>,
+) -> Value {
+    let mut ret_val: Value = Value::Null;
+
+    for expr in body {
+        ret_val = interpret(expr, locals, globals);
+    }
+    ret_val
+}
+
 fn interpret(
     ast_node: &AstNode,
     locals: &mut std::collections::HashMap<std::string::String, Value>,
@@ -56,14 +69,7 @@ fn interpret(
             name: _,
             arg_names: _,
             body,
-        } => {
-            let mut ret_val: Value = Value::Null;
-
-            for expr in body {
-                ret_val = interpret(expr, locals, globals);
-            }
-            ret_val
-        }
+        } => run_body(body, locals, globals),
         AstNode::FunctionCall {
             name,
             args,
@@ -87,24 +93,29 @@ fn interpret(
                 "==" => Value::Bool {
                     val: left_value.eq(&right_value),
                 },
+                "!=" => Value::Bool {
+                    val: !left_value.eq(&right_value),
+                },
+
                 _ => unreachable!(),
             }
         }
         AstNode::If { condition, body } => match interpret(condition, locals, globals) {
             Value::Bool { val } => {
                 if val {
-                    let mut ret_val: Value = Value::Null;
-
-                    for expr in body {
-                        ret_val = interpret(expr, locals, globals);
-                    }
-                    ret_val
+                    run_body(body, locals, globals)
                 } else {
                     Value::Null
                 }
             }
             _ => panic!("condition is not boolean valued"),
         },
+        AstNode::While { condition, body } => {
+            while is_truthy(interpret(condition, locals, globals)) {
+                run_body(body, locals, globals);
+            }
+            Value::Null
+        }
         AstNode::Ident { name } => match locals.get(name) {
             Some(x) => x.clone(),
             _ => panic!(format!("Undefined variable: {}", name)),
@@ -112,11 +123,20 @@ fn interpret(
         AstNode::LetBinding { name, expr } => {
             let result = interpret(expr, locals, globals);
             locals.insert(unwrap_ident(name.as_ref()).clone().into(), result);
+            // println!("Binding {:?} -> {:?}", locals.get(unwrap_ident(name.as_ref())), name);
             Value::Null
         }
         AstNode::IntLiteral { val } => Value::Int { val: *val },
         AstNode::StringLiteral { val } => Value::String { val: val.clone() },
         _ => unreachable!(format!("Not implemented: {:?}", ast_node)),
+    }
+}
+
+fn is_truthy(x: Value) -> bool {
+    if let Value::Bool { val } = x {
+        val
+    } else {
+        panic!(format!("Expression is not boolean valued: {:?}", x))
     }
 }
 

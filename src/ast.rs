@@ -20,6 +20,7 @@ lazy_static! {
             Operator::new(op_times, Left) | Operator::new(op_divide, Left),
             Operator::new(op_power, Right),
             Operator::new(op_equal, Assoc::Left),
+            Operator::new(op_not_equal, Assoc::Left),
         ])
     };
 }
@@ -241,13 +242,16 @@ fn eval(expression: Pairs<Rule>) -> AstNode {
         expression,
         |pair: Pair<Rule>| ast(pair),
         |lhs: AstNode, op: Pair<Rule>, rhs: AstNode| match op.as_rule() {
-            Rule::op_plus | Rule::op_minus | Rule::op_times | Rule::op_divide | Rule::op_equal => {
-                AstNode::BinaryExpr {
-                    left: lhs.into(),
-                    right: rhs.into(),
-                    operator: op.as_str().into(),
-                }
-            }
+            Rule::op_plus
+            | Rule::op_minus
+            | Rule::op_times
+            | Rule::op_divide
+            | Rule::op_equal
+            | Rule::op_not_equal => AstNode::BinaryExpr {
+                left: lhs.into(),
+                right: rhs.into(),
+                operator: op.as_str().into(),
+            },
             _ => unreachable!(format!("{:?}", op.as_rule())),
         },
     )

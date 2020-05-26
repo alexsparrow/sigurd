@@ -56,6 +56,7 @@ op_greater_equal =  { ">=" }
 op_lower         =  { "<" }
 op_lower_equal   =  { "<=" }
 op_equal         =  { "==" }
+op_not_equal     =  { "!=" }
 op_power         =  { "^" }
 op_infix         = _{
     op_plus |
@@ -68,7 +69,8 @@ op_infix         = _{
     op_greater_equal |
     op_lower |
     op_lower_equal |
-    op_equal
+    op_equal |
+    op_not_equal
 }
 
 paren_open  = { "(" }
