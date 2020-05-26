@@ -1,3 +1,4 @@
+use super::value::{as_bool, unary_minus};
 use crate::ast::AstNode;
 use crate::interp::stdlib::{register_stdlib, STDLIB};
 use crate::interp::value::Value;
@@ -96,7 +97,6 @@ fn interpret(
                 "!=" => Value::Bool {
                     val: !left_value.eq(&right_value),
                 },
-
                 _ => unreachable!(),
             }
         }
@@ -104,18 +104,15 @@ fn interpret(
             condition,
             body,
             else_body,
-        } => match interpret(condition, locals, globals) {
-            Value::Bool { val } => {
-                if val {
-                    run_body(body, locals, globals)
-                } else {
-                    run_body(else_body, locals, globals)
-                }
+        } => {
+            if as_bool(interpret(condition, locals, globals)) {
+                run_body(body, locals, globals)
+            } else {
+                run_body(else_body, locals, globals)
             }
-            _ => panic!("condition is not boolean valued"),
-        },
+        }
         AstNode::While { condition, body } => {
-            while is_truthy(interpret(condition, locals, globals)) {
+            while as_bool(interpret(condition, locals, globals)) {
                 run_body(body, locals, globals);
             }
             Value::Null
@@ -132,15 +129,15 @@ fn interpret(
         }
         AstNode::IntLiteral { val } => Value::Int { val: *val },
         AstNode::StringLiteral { val } => Value::String { val: val.clone() },
-        _ => unreachable!(format!("Not implemented: {:?}", ast_node)),
-    }
-}
-
-fn is_truthy(x: Value) -> bool {
-    if let Value::Bool { val } = x {
-        val
-    } else {
-        panic!(format!("Expression is not boolean valued: {:?}", x))
+        AstNode::BoolLiteral { val } => Value::Bool { val: *val },
+        AstNode::FloatLiteral { val } => Value::Float { val: *val },
+        AstNode::UnaryExpr { expr, operator } => match operator {
+            '!' => Value::Bool {
+                val: !as_bool(interpret(expr, locals, globals)),
+            },
+            '-' => unary_minus(interpret(expr, locals, globals)),
+            _ => unreachable!(),
+        },
     }
 }
 

@@ -9,6 +9,7 @@ pub enum Value {
     // The indirection allows us to automatically derive Debug and PartialEq
     StdLibStub { func: &'static str },
     Int { val: i64 },
+    Float { val: f64 },
     String { val: String },
     Bool { val: bool },
 }
@@ -24,4 +25,20 @@ impl Add for Value {
         }
     }
     type Output = Value;
+}
+
+pub fn as_bool(x: Value) -> bool {
+    if let Value::Bool { val } = x {
+        val
+    } else {
+        panic!(format!("Expression is not boolean valued: {:?}", x))
+    }
+}
+
+pub fn unary_minus(x: Value) -> Value {
+    match x {
+        Value::Float { val } => Value::Float { val: -val },
+        Value::Int { val } => Value::Int { val: -val },
+        _ => panic!(format!("Non-numeric: {:?}", x)),
+    }
 }
