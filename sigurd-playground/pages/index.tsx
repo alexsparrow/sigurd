@@ -1,39 +1,10 @@
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
-import { useState } from 'react';
 
-const RustComponent = dynamic({
-  loader: async () => {
-    // Import the wasm module
-    const rustModule = await import('../../sigurd-wasm/pkg')
-    // Return a React component that calls the add_one method on the wasm module
-    return (props) => <SigurdRunner rustModule={rustModule} />
-  },
-  ssr: false
-});
-
-const SigurdRunner = ({ rustModule }) => {
-  const [code, setCode] = useState(`
-fn foo(x: int) {
-  if x == 42 {
-    "Cool number"
-  } else {
-    "Uncool number"
-  }
-}
-fn main(args: string) {
-  foo(42)
-}
-`);
-
-  const [output, setOutput] = useState("");
-
-  return <>
-  <textarea cols={80} rows={15} value={code} onChange={v => setCode(v.currentTarget.value)} />
-  <pre>{output}</pre>
-  <button onClick={e => setOutput(rustModule.run(code))}>Run</button>
-  </>
-}
+const SigurdRunner = dynamic(
+  () => import('../components/SigurdRunner'),
+  { ssr: false }
+)
 
 export default function Home() {
   return (
@@ -44,7 +15,7 @@ export default function Home() {
       </Head>
 
       <main>
-        <RustComponent />
+        <SigurdRunner />
       </main>
 
       <footer>

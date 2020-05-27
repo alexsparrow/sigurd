@@ -1,4 +1,4 @@
-use crate::ast::AstNode;
+use crate::parser::ast::AstNode;
 use std::ops::{Sub, Add};
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]

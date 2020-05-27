@@ -1,4 +1,4 @@
-use sigurd::ast::parse_program;
+use sigurd::parser::parser::parse_program;
 use sigurd::interp::interp::execute;
 use sigurd::interp::value::Value;
 
@@ -31,7 +31,7 @@ fn main(args: string) {
   1
 }"#;
 
-    let ast = parse_program(program);
+    let ast = parse_program(program).unwrap();
     let ret_val = execute(ast, "main", &vec![]);
     assert_eq!(ret_val, Value::Int { val: 1 });
 }
@@ -50,7 +50,7 @@ fn fib(n: int) -> int {
 }
     "#;
 
-    let ast = parse_program(program);
+    let ast = parse_program(program).unwrap();
     let fib10 = execute(ast, "fib", &vec![Value::Int { val: 10 }]);
     assert_eq!(fib10, Value::Int { val: 55 })
 }

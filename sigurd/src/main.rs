@@ -1,5 +1,5 @@
 use sigurd::interp::value::Value;
-use sigurd::{ast, interp::interp::execute};
+use sigurd::{parser::parser::parse_program, interp::interp::execute};
 use std::{convert::TryInto, env, fs};
 
 fn main() {
@@ -8,9 +8,14 @@ fn main() {
 
     let contents = fs::read_to_string(fname).expect("Something went wrong reading the file");
 
-    let ast = ast::parse_program(&contents);
-    match execute(ast, "main", &vec![]) {
-        Value::Int { val } => std::process::exit(val.try_into().unwrap()),
-        _ => std::process::exit(1),
+    let ast_result = parse_program(&contents);
+
+    match ast_result {
+        Ok(ast) => match execute(ast, "main", &vec![]) {
+            Value::Int { val } => std::process::exit(val.try_into().unwrap()),
+            _ => std::process::exit(1),
+        },
+        Err(e) => 
+            eprintln!("Parsing error\n{}", e)
+        }
     }
-}

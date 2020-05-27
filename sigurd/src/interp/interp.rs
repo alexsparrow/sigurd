@@ -1,5 +1,5 @@
 use super::value::{as_bool, unary_minus};
-use crate::ast::AstNode;
+use crate::parser::ast::{AstElement, AstNode};
 use crate::interp::stdlib::{register_stdlib, STDLIB};
 use crate::interp::value::Value;
 use std::{collections::HashMap, ops::Add, cmp::Ordering};
@@ -7,8 +7,8 @@ use std::{collections::HashMap, ops::Add, cmp::Ordering};
 pub fn execute(ast: Vec<AstNode>, func_name: &str, args: &Vec<Value>) -> Value {
     let mut functions: HashMap<String, Value> = HashMap::new();
     for node in ast.iter() {
-        match node {
-            AstNode::Function {
+        match &node.element {
+            AstElement::Function {
                 name,
                 arg_names: _,
                 body: _,
@@ -40,8 +40,8 @@ fn run_function(globals: &HashMap<String, Value>, name: &str, args: &Vec<Value>)
 }
 
 fn unwrap_ident(node: &AstNode) -> &str {
-    match node {
-        AstNode::Ident { name } => name,
+    match &node.element {
+        AstElement::Ident { name } => name,
         _ => unreachable!(),
     }
 }
@@ -65,13 +65,13 @@ fn interpret(
     globals: &HashMap<String, Value>,
 ) -> Value {
     // println!("AST Node: {:?}", ast_node);
-    match ast_node {
-        AstNode::Function {
+    match &ast_node.element {
+        AstElement::Function {
             name: _,
             arg_names: _,
             body,
-        } => run_body(body, locals, globals),
-        AstNode::FunctionCall {
+        } => run_body(&body, locals, globals),
+        AstElement::FunctionCall {
             name,
             args,
             left: _,
@@ -80,15 +80,15 @@ fn interpret(
                 .iter()
                 .map(|a| interpret(a, locals, globals))
                 .collect::<Vec<Value>>();
-            run_function(&globals, name, &arg_values)
+            run_function(&globals, &name, &arg_values)
         }
-        AstNode::BinaryExpr {
+        AstElement::BinaryExpr {
             left,
             operator,
             right,
         } => {
-            let left_value = interpret(left, locals, globals);
-            let right_value = interpret(right, locals, globals);
+            let left_value = interpret(&left, locals, globals);
+            let right_value = interpret(&right, locals, globals);
             match operator.as_str() {
                 "+" => left_value + right_value,
                 "-" => left_value - right_value,
@@ -104,53 +104,53 @@ fn interpret(
                 _ => unreachable!(),
             }
         }
-        AstNode::If {
+        AstElement::If {
             condition,
             body,
             else_body,
         } => {
-            if as_bool(interpret(condition, locals, globals)) {
-                run_body(body, locals, globals)
+            if as_bool(interpret(&condition, locals, globals)) {
+                run_body(&body, locals, globals)
             } else {
-                run_body(else_body, locals, globals)
+                run_body(&else_body, locals, globals)
             }
         }
-        AstNode::While { condition, body } => {
-            while as_bool(interpret(condition, locals, globals)) {
-                run_body(body, locals, globals);
+        AstElement::While { condition, body } => {
+            while as_bool(interpret(&condition, locals, globals)) {
+                run_body(&body, locals, globals);
             }
             Value::Null
         }
-        AstNode::Ident { name } => match locals.get(name) {
+        AstElement::Ident { name } => match locals.get(name) {
             Some(x) => x.clone(),
             _ => panic!(format!("Undefined variable: {}", name)),
         },
-        AstNode::LetBinding { name, expr } => {
-            let result = interpret(expr, locals, globals);
+        AstElement::LetBinding { name, expr } => {
+            let result = interpret(&expr, locals, globals);
             locals.insert(unwrap_ident(name.as_ref()).clone().into(), result);
             // println!("Binding {:?} -> {:?}", locals.get(unwrap_ident(name.as_ref())), name);
             Value::Null
         }
-        AstNode::IntLiteral { val } => Value::Int { val: *val },
-        AstNode::StringLiteral { val } => Value::String { val: val.clone() },
-        AstNode::BoolLiteral { val } => Value::Bool { val: *val },
-        AstNode::FloatLiteral { val } => Value::Float { val: *val },
-        AstNode::UnaryExpr { expr, operator } => match operator {
+        AstElement::IntLiteral { val } => Value::Int { val: *val },
+        AstElement::StringLiteral { val } => Value::String { val: val.clone() },
+        AstElement::BoolLiteral { val } => Value::Bool { val: *val },
+        AstElement::FloatLiteral { val } => Value::Float { val: *val },
+        AstElement::UnaryExpr { expr, operator } => match operator {
             '!' => Value::Bool {
-                val: !as_bool(interpret(expr, locals, globals)),
+                val: !as_bool(interpret(&expr, locals, globals)),
             },
-            '-' => unary_minus(interpret(expr, locals, globals)),
+            '-' => unary_minus(interpret(&expr, locals, globals)),
             _ => unreachable!(),
         },
     }
 }
 
 fn create_scope(node: &AstNode, args: &Vec<Value>) -> std::collections::HashMap<String, Value> {
-    if let AstNode::Function {
+    if let AstElement::Function {
         name: _,
         arg_names,
         body: _,
-    } = node
+    } = &node.element
     {
         let mut scope: HashMap<String, Value> = HashMap::new();
 

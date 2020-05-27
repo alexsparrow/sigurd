@@ -2,16 +2,17 @@ use pest::Parser;
 
 use pest::{
     iterators::{Pair, Pairs},
-    prec_climber::{Assoc, Operator, PrecClimber},
+    prec_climber::{Assoc, Operator, PrecClimber}, error::{InputLocation, Error, LineColLocation},
 };
 use std::{fmt::Debug, str::FromStr};
+use super::ast::{AstElement, AstNode, Position};
 
 #[derive(Parser)]
 #[grammar = "sigurd.pest"]
 pub struct SigurdParser;
 
 lazy_static! {
-    static ref PREC_CLIMBER: PrecClimber<Rule> = {
+    pub static ref PREC_CLIMBER: PrecClimber<Rule> = {
         use Assoc::*;
         use Rule::*;
 
@@ -26,57 +27,6 @@ lazy_static! {
     };
 }
 
-#[derive(Debug, PartialEq, Clone, PartialOrd)]
-pub enum AstNode {
-    IntLiteral {
-        val: i64,
-    },
-    FloatLiteral {
-        val: f64,
-    },
-    StringLiteral {
-        val: String,
-    },
-    BoolLiteral {
-        val: bool,
-    },
-    Ident {
-        name: String,
-    },
-    UnaryExpr {
-        expr: Box<AstNode>,
-        operator: char,
-    },
-    BinaryExpr {
-        left: Box<AstNode>,
-        right: Box<AstNode>,
-        operator: String,
-    },
-    FunctionCall {
-        left: Option<Box<AstNode>>,
-        name: String,
-        args: Vec<AstNode>,
-    },
-    If {
-        condition: Box<AstNode>,
-        body: Vec<AstNode>,
-        else_body: Vec<AstNode>,
-    },
-    While {
-        condition: Box<AstNode>,
-        body: Vec<AstNode>,
-    },
-    LetBinding {
-        name: Box<AstNode>,
-        expr: Box<AstNode>,
-    },
-    Function {
-        name: String,
-        arg_names: Vec<String>,
-        body: Vec<AstNode>,
-    },
-}
-
 fn parse_literal<T: FromStr>(x: &Pair<Rule>) -> T
 where
     <T as FromStr>::Err: Debug,
@@ -87,8 +37,15 @@ where
         .expect(format!("Can't parse literal: \"{}\"", x.as_str()).as_ref())
 }
 
+fn ast_node(x: &Pair<Rule>, element: AstElement) -> AstNode {
+    AstNode {
+        element,
+        position: Position(x.as_span().start_pos().line_col(), x.as_span().end_pos().line_col())
+    }
+}
+
 fn parse_function(x: Pair<Rule>) -> AstNode {
-    let pairs = x.into_inner().collect::<Vec<Pair<Rule>>>();
+    let pairs = x.clone().into_inner().collect::<Vec<Pair<Rule>>>();
 
     let def_inner = pairs
         .iter()
@@ -122,15 +79,15 @@ fn parse_function(x: Pair<Rule>) -> AstNode {
         .unwrap()
         .clone();
 
-    return AstNode::Function {
+    ast_node(&x,AstElement::Function {
         name: fn_name.to_string(),
         arg_names,
         body: body.into_inner().map(|p| ast(p)).collect(),
-    };
+    })
 }
 
 fn parse_func_call(x: Pair<Rule>) -> AstNode {
-    let pairs = x.into_inner().collect::<Vec<Pair<Rule>>>();
+    let pairs = x.clone().into_inner().collect::<Vec<Pair<Rule>>>();
     let ident = pairs.iter().find(|p| p.as_rule() == Rule::ident).unwrap();
     let args = pairs
         .iter()
@@ -138,11 +95,11 @@ fn parse_func_call(x: Pair<Rule>) -> AstNode {
         .unwrap()
         .clone();
 
-    return AstNode::FunctionCall {
+    ast_node(&x, AstElement::FunctionCall {
         left: None,
         args: args.into_inner().map(|p| ast(p)).collect(),
         name: ident.as_str().into(),
-    };
+        })
 }
 
 fn parse_term(x: Pairs<Rule>) -> AstNode {
@@ -155,17 +112,14 @@ fn parse_term(x: Pairs<Rule>) -> AstNode {
         .unwrap();
 
     let base_node = if call.is_some() {
-        match parse_func_call(call.unwrap().clone()) {
-            AstNode::FunctionCall {
-                name,
-                args,
-                left: _,
-            } => AstNode::FunctionCall {
+        if let AstNode { position:_, element: AstElement::FunctionCall { name, args, left: _} } =  parse_func_call(call.unwrap().clone()) {
+            ast_node(call.unwrap(), AstElement::FunctionCall {
                 name,
                 left: Some(Box::new(ast(value.clone()))),
                 args: args,
-            },
-            _ => unreachable!("OH NO"),
+            })
+        } else {
+            unreachable!()
         }
     } else {
         ast(value.clone())
@@ -175,17 +129,17 @@ fn parse_term(x: Pairs<Rule>) -> AstNode {
         .iter()
         .filter(|p| p.as_rule() == Rule::op_unary)
         .fold(base_node, |accum, p| match p.as_rule() {
-            Rule::op_unary_minus => AstNode::UnaryExpr {
+            Rule::op_unary_minus => ast_node(p, AstElement::UnaryExpr {
                 expr: Box::new(accum),
                 operator: '-',
-            },
+            }),
             _ => unreachable!("Boo hoo"),
         });
     y
 }
 
 fn parse_let_binding(x: Pair<Rule>) -> AstNode {
-    let inner = x.into_inner().collect::<Vec<Pair<Rule>>>();
+    let inner = x.clone().into_inner().collect::<Vec<Pair<Rule>>>();
     let ident = ast(inner
         .iter()
         .find(|p| p.as_rule() == Rule::ident)
@@ -197,10 +151,10 @@ fn parse_let_binding(x: Pair<Rule>) -> AstNode {
         .unwrap()
         .clone());
 
-    return AstNode::LetBinding {
+    ast_node(&x, AstElement::LetBinding {
         name: ident.into(),
         expr: Box::new(expr),
-    };
+    })
 }
 
 fn parse_body(x: Pair<Rule>) -> Vec<AstNode> {
@@ -218,7 +172,7 @@ fn parse_if_statement(x: Pair<Rule>) -> AstNode {
     let body = inner.iter().find(|p| p.as_rule() == Rule::fn_body).unwrap();
     let else_clause = inner.iter().find(|p| p.as_rule() == Rule::else_clause);
 
-    return AstNode::If {
+    ast_node(&x, AstElement::If {
         condition: Box::new(expr),
         body: parse_body(body.clone()),
         else_body: match else_clause {
@@ -232,7 +186,7 @@ fn parse_if_statement(x: Pair<Rule>) -> AstNode {
             }
             _ => vec![],
         },
-    };
+    })
 }
 
 fn parse_while_statement(x: Pair<Rule>) -> AstNode {
@@ -245,10 +199,10 @@ fn parse_while_statement(x: Pair<Rule>) -> AstNode {
 
     let body = inner.iter().find(|p| p.as_rule() == Rule::fn_body).unwrap();
 
-    return AstNode::While {
+    ast_node(&x, AstElement::While {
         condition: Box::new(expr),
         body: parse_body(body.clone()),
-    };
+    })
 }
 
 fn eval(expression: Pairs<Rule>) -> AstNode {
@@ -262,11 +216,11 @@ fn eval(expression: Pairs<Rule>) -> AstNode {
             | Rule::op_divide
             | Rule::op_equal
             | Rule::op_not_equal
-            | Rule::op_lower_equal => AstNode::BinaryExpr {
+            | Rule::op_lower_equal => ast_node(&op,AstElement::BinaryExpr {
                 left: lhs.into(),
                 right: rhs.into(),
                 operator: op.as_str().into(),
-            },
+            }),
             _ => unreachable!(format!("{:?}", op.as_rule())),
         },
     )
@@ -285,23 +239,23 @@ fn ast(x: Pair<Rule>) -> AstNode {
     match x.as_rule() {
         Rule::expr => eval(x.into_inner()),
         Rule::value => parse_value(x),
-        Rule::int => AstNode::IntLiteral {
+        Rule::int => ast_node(&x, AstElement::IntLiteral {
             val: parse_literal::<i64>(&x),
-        },
-        Rule::float => AstNode::FloatLiteral {
+        }),
+        Rule::float => ast_node(&x, AstElement::FloatLiteral {
             val: parse_literal::<f64>(&x),
-        },
-        Rule::bool => AstNode::BoolLiteral {
+        }),
+        Rule::bool => ast_node(&x, AstElement::BoolLiteral {
             val: parse_literal::<bool>(&x),
-        },
-        Rule::ident => AstNode::Ident {
+        }),
+        Rule::ident => ast_node(&x, AstElement::Ident {
             name: x.as_str().trim().into(),
-        },
+        }),
 
         Rule::term => parse_term(x.into_inner()),
-        Rule::string => AstNode::StringLiteral {
+        Rule::string => ast_node(&x, AstElement::StringLiteral {
             val: x.as_str().trim().trim_matches('"').into(),
-        },
+        }),
         Rule::call => parse_func_call(x),
         Rule::let_binding => parse_let_binding(x),
         Rule::if_statement => parse_if_statement(x),
@@ -313,23 +267,17 @@ fn ast(x: Pair<Rule>) -> AstNode {
     }
 }
 
-pub fn parse(s: &str, rule: Rule) -> Vec<AstNode> {
-    let parsed: Vec<Pair<Rule>> = SigurdParser::parse(rule, &s.trim_end())
-        .expect("unsuccessful parse")
-        .collect();
-
-    // println!("{:#?}", parsed);
-
-    return parsed
-        .iter()
+pub fn parse(s: &str, rule: Rule) -> Result<Vec<AstNode>, Error<Rule>> {
+    let parsed = SigurdParser::parse(rule, &s.trim_end())?;
+    Ok(parsed
         .map(|x| ast(x.clone()))
-        .collect::<Vec<AstNode>>();
+        .collect::<Vec<AstNode>>())
 }
 
-pub fn parse_program(s: &str) -> std::vec::Vec<AstNode> {
+pub fn parse_program(s: &str) -> Result<Vec<AstNode>, Error<Rule>> {
     return parse(s, Rule::program);
 }
 
-pub fn parse_expr(s: &str) -> std::vec::Vec<AstNode> {
+pub fn parse_expr(s: &str) -> Result<Vec<AstNode>, Error<Rule>> {
     return parse(s, Rule::expr);
 }

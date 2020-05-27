@@ -1,17 +1,31 @@
-use wasm_bindgen::prelude::*;
-use sigurd::ast::parse_program;
 use sigurd::interp::interp::execute;
+use sigurd::parser::parser::parse_program;
+use wasm_bindgen::prelude::*;
 
-// Export a `greet` function from Rust to JavaScript, that alerts a
-// hello message.
 #[wasm_bindgen]
 pub fn run(code: &str) -> JsValue {
-    let ast = parse_program(code);
-    let result = execute(ast, "main", &vec![]);
+    let ast_result = parse_program(code);
 
-    return JsValue::from_str(format!("{:?}", result).as_ref());
+    match ast_result {
+        Ok(ast) => {
+            let result = execute(ast, "main", &vec![]);
+            return JsValue::from_str(format!("WAT: {:?}", result).as_ref());
+        }
+        Err(e) => return JsValue::from_str(format!("Parse error:\n{}", e).as_ref()),
+    }
 }
 
+#[wasm_bindgen]
+pub fn parse(code: &str) -> JsValue {
+    let ast_result = parse_program(code);
+
+    match ast_result {
+        Ok(ast) => {
+            return JsValue::from_serde(&ast).unwrap();
+        }
+        Err(e) => return JsValue::from_str(format!("Parse error:\n{}", e).as_ref()),
+    }
+}
 
 #[test]
 fn it_works() {
