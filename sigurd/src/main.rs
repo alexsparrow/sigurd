@@ -12,8 +12,9 @@ fn main() {
 
     match ast_result {
         Ok(ast) => match execute(ast, "main", &vec![]) {
-            Value::Int { val } => std::process::exit(val.try_into().unwrap()),
-            _ => std::process::exit(1),
+            Ok(Value::Int { val }) => std::process::exit(val.try_into().unwrap()),
+            Ok(_) => std::process::exit(1),
+            Err(e) => eprintln!("Interpreter error\n{:?}", e)
         },
         Err(e) => 
             eprintln!("Parsing error\n{}", e)

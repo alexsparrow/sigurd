@@ -27,14 +27,24 @@ lazy_static! {
     };
 }
 
-fn parse_literal<T: FromStr>(x: &Pair<Rule>) -> T
+struct AstError {
+    message: String,
+}
+
+impl AstError {
+    fn new(message: &str) -> AstError {
+        return AstError { message: message.into() }
+    }
+}
+
+fn parse_literal<T: FromStr>(x: &Pair<Rule>) -> Result<T, AstError>
 where
     <T as FromStr>::Err: Debug,
 {
     x.as_str()
         .trim()
         .parse::<T>()
-        .expect(format!("Can't parse literal: \"{}\"", x.as_str()).as_ref())
+        .map_err(|e| AstError::new(format!("Can't parse literal: \"{}\"", x.as_str()).as_ref()))
 }
 
 fn ast_node(x: &Pair<Rule>, element: AstElement) -> AstNode {
@@ -44,7 +54,7 @@ fn ast_node(x: &Pair<Rule>, element: AstElement) -> AstNode {
     }
 }
 
-fn parse_function(x: Pair<Rule>) -> AstNode {
+fn parse_function(x: Pair<Rule>) -> Result<AstNode, AstError> {
     let pairs = x.clone().into_inner().collect::<Vec<Pair<Rule>>>();
 
     let def_inner = pairs
@@ -79,14 +89,14 @@ fn parse_function(x: Pair<Rule>) -> AstNode {
         .unwrap()
         .clone();
 
-    ast_node(&x,AstElement::Function {
+    Ok(ast_node(&x,AstElement::Function {
         name: fn_name.to_string(),
         arg_names,
-        body: body.into_inner().map(|p| ast(p)).collect(),
-    })
+        body: body.into_inner().map(|p| ast(p)).collect::<Result<Vec<AstNode>, AstError>>()?,
+    }))
 }
 
-fn parse_func_call(x: Pair<Rule>) -> AstNode {
+fn parse_func_call(x: Pair<Rule>) -> Result<AstNode, AstError> {
     let pairs = x.clone().into_inner().collect::<Vec<Pair<Rule>>>();
     let ident = pairs.iter().find(|p| p.as_rule() == Rule::ident).unwrap();
     let args = pairs
@@ -95,14 +105,14 @@ fn parse_func_call(x: Pair<Rule>) -> AstNode {
         .unwrap()
         .clone();
 
-    ast_node(&x, AstElement::FunctionCall {
+    Ok(ast_node(&x, AstElement::FunctionCall {
         left: None,
-        args: args.into_inner().map(|p| ast(p)).collect(),
+        args: args.into_inner().map(|p| ast(p)).collect::<Result<Vec<AstNode>, AstError>>()?,
         name: ident.as_str().into(),
-        })
+        }))
 }
 
-fn parse_term(x: Pairs<Rule>) -> AstNode {
+fn parse_term(x: Pairs<Rule>) -> Result<AstNode, AstError> {
     let pairs = x.collect::<Vec<Pair<Rule>>>();
     let call = pairs.iter().filter(|p| p.as_rule() == Rule::call).next();
     let value = pairs
@@ -112,17 +122,17 @@ fn parse_term(x: Pairs<Rule>) -> AstNode {
         .unwrap();
 
     let base_node = if call.is_some() {
-        if let AstNode { position:_, element: AstElement::FunctionCall { name, args, left: _} } =  parse_func_call(call.unwrap().clone()) {
+        if let AstNode { position:_, element: AstElement::FunctionCall { name, args, left: _} } =  parse_func_call(call.unwrap().clone())? {
             ast_node(call.unwrap(), AstElement::FunctionCall {
                 name,
-                left: Some(Box::new(ast(value.clone()))),
+                left: Some(Box::new(ast(value.clone())?)),
                 args: args,
             })
         } else {
             unreachable!()
         }
     } else {
-        ast(value.clone())
+        ast(value.clone())?
     };
 
     let y = pairs
@@ -135,33 +145,33 @@ fn parse_term(x: Pairs<Rule>) -> AstNode {
             }),
             _ => unreachable!("Boo hoo"),
         });
-    y
+    Ok(y)
 }
 
-fn parse_let_binding(x: Pair<Rule>) -> AstNode {
+fn parse_let_binding(x: Pair<Rule>) -> Result<AstNode, AstError> {
     let inner = x.clone().into_inner().collect::<Vec<Pair<Rule>>>();
     let ident = ast(inner
         .iter()
         .find(|p| p.as_rule() == Rule::ident)
         .unwrap()
-        .clone());
+        .clone())?;
     let expr = ast(inner
         .iter()
         .find(|p| p.as_rule() == Rule::expr)
         .unwrap()
-        .clone());
+        .clone())?;
 
-    ast_node(&x, AstElement::LetBinding {
+    Ok(ast_node(&x, AstElement::LetBinding {
         name: ident.into(),
         expr: Box::new(expr),
-    })
+    }))
 }
 
-fn parse_body(x: Pair<Rule>) -> Vec<AstNode> {
-    return x.into_inner().map(|p| ast(p)).collect::<Vec<AstNode>>();
+fn parse_body(x: Pair<Rule>) -> Result<Vec<AstNode>, AstError> {
+    return x.into_inner().map(|p| ast(p)).collect::<Result<Vec<AstNode>, AstError>>();
 }
 
-fn parse_if_statement(x: Pair<Rule>) -> AstNode {
+fn parse_if_statement(x: Pair<Rule>) -> Result<AstNode, AstError> {
     let inner = x.clone().into_inner().collect::<Vec<Pair<Rule>>>();
     let expr = ast(inner
         .iter()
@@ -172,9 +182,9 @@ fn parse_if_statement(x: Pair<Rule>) -> AstNode {
     let body = inner.iter().find(|p| p.as_rule() == Rule::fn_body).unwrap();
     let else_clause = inner.iter().find(|p| p.as_rule() == Rule::else_clause);
 
-    ast_node(&x, AstElement::If {
-        condition: Box::new(expr),
-        body: parse_body(body.clone()),
+    Ok(ast_node(&x, AstElement::If {
+        condition: Box::new(expr?),
+        body: parse_body(body.clone())?,
         else_body: match else_clause {
             Some(else_pair) => {
                 let else_body = else_pair
@@ -182,14 +192,14 @@ fn parse_if_statement(x: Pair<Rule>) -> AstNode {
                     .into_inner()
                     .find(|p| p.as_rule() == Rule::fn_body)
                     .unwrap();
-                parse_body(else_body)
+                parse_body(else_body)?
             }
             _ => vec![],
         },
-    })
+    }))
 }
 
-fn parse_while_statement(x: Pair<Rule>) -> AstNode {
+fn parse_while_statement(x: Pair<Rule>) -> Result<AstNode, AstError> {
     let inner = x.clone().into_inner().collect::<Vec<Pair<Rule>>>();
     let expr = ast(inner
         .iter()
@@ -199,34 +209,34 @@ fn parse_while_statement(x: Pair<Rule>) -> AstNode {
 
     let body = inner.iter().find(|p| p.as_rule() == Rule::fn_body).unwrap();
 
-    ast_node(&x, AstElement::While {
-        condition: Box::new(expr),
-        body: parse_body(body.clone()),
-    })
+    Ok(ast_node(&x, AstElement::While {
+        condition: Box::new(expr?),
+        body: parse_body(body.clone())?,
+    }))
 }
 
-fn eval(expression: Pairs<Rule>) -> AstNode {
+fn eval(expression: Pairs<Rule>) -> Result<AstNode, AstError> {
     PREC_CLIMBER.climb(
         expression,
         |pair: Pair<Rule>| ast(pair),
-        |lhs: AstNode, op: Pair<Rule>, rhs: AstNode| match op.as_rule() {
+        |lhs: Result<AstNode, AstError>, op: Pair<Rule>, rhs: Result<AstNode, AstError>| match op.as_rule() {
             Rule::op_plus
             | Rule::op_minus
             | Rule::op_times
             | Rule::op_divide
             | Rule::op_equal
             | Rule::op_not_equal
-            | Rule::op_lower_equal => ast_node(&op,AstElement::BinaryExpr {
-                left: lhs.into(),
-                right: rhs.into(),
+            | Rule::op_lower_equal => Ok(ast_node(&op,AstElement::BinaryExpr {
+                left: lhs?.into(),
+                right: rhs?.into(),
                 operator: op.as_str().into(),
-            }),
+            })),
             _ => unreachable!(format!("{:?}", op.as_rule())),
         },
     )
 }
 
-fn parse_value(x: Pair<Rule>) -> AstNode {
+fn parse_value(x: Pair<Rule>) -> Result<AstNode, AstError> {
     let inner = x.into_inner().collect::<Vec<Pair<Rule>>>();
 
     match inner.first().unwrap().as_rule() {
@@ -235,43 +245,43 @@ fn parse_value(x: Pair<Rule>) -> AstNode {
     }
 }
 
-fn ast(x: Pair<Rule>) -> AstNode {
-    match x.as_rule() {
-        Rule::expr => eval(x.into_inner()),
-        Rule::value => parse_value(x),
+fn ast(x: Pair<Rule>) -> Result<AstNode, AstError> {
+    Ok(match x.as_rule() {
+        Rule::expr => eval(x.into_inner())?,
+        Rule::value => parse_value(x)?,
         Rule::int => ast_node(&x, AstElement::IntLiteral {
-            val: parse_literal::<i64>(&x),
+            val: parse_literal::<i64>(&x)?,
         }),
         Rule::float => ast_node(&x, AstElement::FloatLiteral {
-            val: parse_literal::<f64>(&x),
+            val: parse_literal::<f64>(&x)?,
         }),
         Rule::bool => ast_node(&x, AstElement::BoolLiteral {
-            val: parse_literal::<bool>(&x),
+            val: parse_literal::<bool>(&x)?,
         }),
         Rule::ident => ast_node(&x, AstElement::Ident {
             name: x.as_str().trim().into(),
         }),
 
-        Rule::term => parse_term(x.into_inner()),
+        Rule::term => parse_term(x.into_inner())?,
         Rule::string => ast_node(&x, AstElement::StringLiteral {
             val: x.as_str().trim().trim_matches('"').into(),
         }),
-        Rule::call => parse_func_call(x),
-        Rule::let_binding => parse_let_binding(x),
-        Rule::if_statement => parse_if_statement(x),
-        Rule::while_statement => parse_while_statement(x),
-        Rule::function => parse_function(x),
-        _ => {
-            panic!(format!("Unhandled {:#?}", x));
-        }
-    }
+        Rule::call => parse_func_call(x)?,
+        Rule::let_binding => parse_let_binding(x)?,
+        Rule::if_statement => parse_if_statement(x)?,
+        Rule::while_statement => parse_while_statement(x)?,
+        Rule::function => parse_function(x)?,
+        x => Err(AstError::new(format!("{:?} is not implemented", x).as_ref()))?
+    })
 }
 
 pub fn parse(s: &str, rule: Rule) -> Result<Vec<AstNode>, Error<Rule>> {
     let parsed = SigurdParser::parse(rule, &s.trim_end())?;
-    Ok(parsed
-        .map(|x| ast(x.clone()))
-        .collect::<Vec<AstNode>>())
+    parsed
+        .map(|x| ast(x.clone())
+            .map_err(|e| pest::error::Error::new_from_span(pest::error::ErrorVariant::CustomError { message: e.message }, x.as_span()))
+    )
+        .collect::<Result<Vec<AstNode>, Error<Rule>>>()
 }
 
 pub fn parse_program(s: &str) -> Result<Vec<AstNode>, Error<Rule>> {

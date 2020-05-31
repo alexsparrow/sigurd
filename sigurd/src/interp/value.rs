@@ -12,6 +12,7 @@ pub enum Value {
     Float { val: f64 },
     String { val: String },
     Bool { val: bool },
+    Error
 }
 
 impl Add for Value {
@@ -19,9 +20,9 @@ impl Add for Value {
         match self {
             Value::Int { val: val_a } => match other {
                 Value::Int { val: val_b } => Value::Int { val: val_a + val_b },
-                _ => unimplemented!(),
+                _ => Value::Error,
             },
-            _ => unimplemented!(),
+            _ => Value::Error,
         }
     }
     type Output = Value;
@@ -32,9 +33,9 @@ impl Sub for Value {
         match self {
             Value::Int { val: val_a } => match other {
                 Value::Int { val: val_b } => Value::Int { val: val_a - val_b },
-                _ => unimplemented!(),
+                _ => Value::Error,
             },
-            _ => unimplemented!(),
+            _ => Value::Error,
         }
     }
     type Output = Value;

@@ -9,7 +9,10 @@ pub fn run(code: &str) -> JsValue {
     match ast_result {
         Ok(ast) => {
             let result = execute(ast, "main", &vec![]);
-            return JsValue::from_str(format!("WAT: {:?}", result).as_ref());
+            match result {
+                Ok(value) =>  JsValue::from_str(format!("Result: {:?}", value).as_ref()),
+                Err(e) => JsValue::from_str(&format!("Interpreter error\n{:?}", e))
+            }
         }
         Err(e) => return JsValue::from_str(format!("Parse error:\n{}", e).as_ref()),
     }
