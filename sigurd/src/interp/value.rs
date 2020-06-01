@@ -1,5 +1,6 @@
+use super::interp::InterpreterError;
 use crate::parser::ast::AstNode;
-use std::ops::{Sub, Add};
+use std::ops::{Add, Sub};
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Value {
@@ -12,7 +13,7 @@ pub enum Value {
     Float { val: f64 },
     String { val: String },
     Bool { val: bool },
-    Error
+    Error,
 }
 
 impl Add for Value {
@@ -41,19 +42,24 @@ impl Sub for Value {
     type Output = Value;
 }
 
-
-pub fn as_bool(x: Value) -> bool {
+pub fn as_bool(x: Value, ast_node: &AstNode) -> Result<bool, InterpreterError> {
     if let Value::Bool { val } = x {
-        val
+        Ok(val)
     } else {
-        panic!(format!("Expression is not boolean valued: {:?}", x))
+        Err(InterpreterError::new(&format!(
+            "Expected boolean value, found {:?}",
+            x
+        ), ast_node.into()))
     }
 }
 
-pub fn unary_minus(x: Value) -> Value {
+pub fn unary_minus(x: Value, ast_node: &AstNode) -> Result<Value, InterpreterError> {
     match x {
-        Value::Float { val } => Value::Float { val: -val },
-        Value::Int { val } => Value::Int { val: -val },
-        _ => panic!(format!("Non-numeric: {:?}", x)),
+        Value::Float { val } => Ok(Value::Float { val: -val }),
+        Value::Int { val } => Ok(Value::Int { val: -val }),
+        _ => Err(InterpreterError::new(&format!(
+            "Expected numberic value, found {:?}",
+            x
+        ), ast_node.into())),
     }
 }

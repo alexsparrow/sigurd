@@ -1,18 +1,30 @@
 use super::value::{as_bool, unary_minus};
 use crate::interp::stdlib::{register_stdlib, STDLIB};
 use crate::interp::value::Value;
-use crate::parser::ast::{AstElement, AstNode};
-use std::{cmp::Ordering, collections::HashMap, fmt::Display, ops::Add};
+use crate::parser::ast::{AstElement, AstNode, Position};
+use std::{collections::HashMap, fmt};
 
 #[derive(Debug)]
 pub struct InterpreterError {
     message: String,
+    position: Option<Position>
+}
+
+impl fmt::Display for InterpreterError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(Position((line_a, col_a), (line_b, col_b))) = self.position {
+            write!(f, "Interpreter error (line {}, column {}): {}", line_a, col_a, self.message)
+        } else {
+            write!(f, "Interpreter error: {}", self.message)
+        }
+    }
 }
 
 impl InterpreterError {
-    fn new(message: &str) -> InterpreterError {
+    pub fn new(message: &str, x: Option<&AstNode>) -> InterpreterError {
         InterpreterError {
             message: message.into(),
+            position: x.map(|n| n.position.clone())
         }
     }
 }
@@ -35,19 +47,20 @@ pub fn execute(
             x => Err(InterpreterError::new(&format!(
                 "Invalid AST element at top level: {:?}",
                 x
-            )))?,
+            ), node.into()))?,
         }
     }
 
     register_stdlib(&mut functions);
 
-    run_function(&functions, func_name, args)
+    run_function(&functions, func_name, args, None)
 }
 
 fn run_function(
     globals: &HashMap<String, Value>,
     name: &str,
     args: &Vec<Value>,
+    source_node: Option<&AstNode>
 ) -> Result<Value, InterpreterError> {
     Ok(match globals.get(name) {
         Some(Value::Function { node }) => {
@@ -57,13 +70,13 @@ fn run_function(
         Some(Value::StdLibStub { func }) => {
             let f = STDLIB
                 .get(func)
-                .ok_or_else(|| InterpreterError::new(&format!("Function not found: {:?}", func)))?;
+                .ok_or_else(|| InterpreterError::new(&format!("Function not found: {:?}", func), source_node))?;
             f(args)
         }
         _ => Err(InterpreterError::new(&format!(
             "No function named {:?}",
             name
-        )))?,
+        ), source_node))?,
     })
 }
 
@@ -92,13 +105,12 @@ fn interpret(
     locals: &mut std::collections::HashMap<std::string::String, Value>,
     globals: &HashMap<String, Value>,
 ) -> Result<Value, InterpreterError> {
-    // println!("AST Node: {:?}", ast_node);
-    Ok(match &ast_node.element {
+    match &ast_node.element {
         AstElement::Function {
             name: _,
             arg_names: _,
             body,
-        } => run_body(&body, locals, globals)?,
+        } => run_body(&body, locals, globals),
         AstElement::FunctionCall {
             name,
             args,
@@ -108,7 +120,7 @@ fn interpret(
                 .iter()
                 .map(|a| interpret(a, locals, globals))
                 .collect::<Result<Vec<Value>, InterpreterError>>()?;
-            run_function(&globals, &name, &arg_values)?
+            run_function(&globals, &name, &arg_values, ast_node.into())
         }
         AstElement::BinaryExpr {
             left,
@@ -129,67 +141,77 @@ fn interpret(
                 "<=" => Value::Bool {
                     val: left_value <= right_value,
                 },
+                "<" => Value::Bool {
+                    val: left_value < right_value,
+                },
+                ">=" => Value::Bool {
+                    val: left_value >= right_value,
+                },
+                ">" => Value::Bool {
+                    val: left_value > right_value,
+                },
+
                 s => Err(InterpreterError::new(&format!(
                     "Operator not implemented: {}",
                     s
-                )))?,
+                ), ast_node.into()))?,
             };
 
             if let Value::Error = result {
                 Err(InterpreterError::new(&format!(
-                    "Evaluation failed for {:?} {:} {:?}",
+                    "Binary expression invalid: {:?} {:} {:?}",
                     left_value.clone(),
                     operator,
                     right_value
-                )))?
+                ), ast_node.into()))
+            } else {
+                Ok(result)
             }
-            result
         }
         AstElement::If {
             condition,
             body,
             else_body,
         } => {
-            if as_bool(interpret(&condition, locals, globals)?) {
-                run_body(&body, locals, globals)?
+            if as_bool(interpret(&condition, locals, globals)?, ast_node)? {
+                run_body(&body, locals, globals)
             } else {
-                run_body(&else_body, locals, globals)?
+                run_body(&else_body, locals, globals)
             }
         }
         AstElement::While { condition, body } => {
-            while as_bool(interpret(&condition, locals, globals)?) {
-                run_body(&body, locals, globals);
+            while as_bool(interpret(&condition, locals, globals)?, ast_node)? {
+                run_body(&body, locals, globals)?;
             }
-            Value::Null
+            Ok(Value::Null)
         }
         AstElement::Ident { name } => match locals.get(name) {
-            Some(x) => x.clone(),
+            Some(x) => Ok(x.clone()),
             _ => Err(InterpreterError::new(&format!(
                 "Undefined variable: {}",
                 name
-            )))?,
+            ), ast_node.into())),
         },
         AstElement::LetBinding { name, expr } => {
             let result = interpret(&expr, locals, globals)?;
             locals.insert(unwrap_ident(name.as_ref()).clone().into(), result);
-            // println!("Binding {:?} -> {:?}", locals.get(unwrap_ident(name.as_ref())), name);
-            Value::Null
+            Ok(Value::Null)
         }
-        AstElement::IntLiteral { val } => Value::Int { val: *val },
-        AstElement::StringLiteral { val } => Value::String { val: val.clone() },
-        AstElement::BoolLiteral { val } => Value::Bool { val: *val },
-        AstElement::FloatLiteral { val } => Value::Float { val: *val },
-        AstElement::UnaryExpr { expr, operator } => match operator {
+        AstElement::IntLiteral { val } => Ok(Value::Int { val: *val }),
+        AstElement::StringLiteral { val } => Ok(Value::String { val: val.clone() }),
+        AstElement::BoolLiteral { val } => Ok(Value::Bool { val: *val }),
+        AstElement::FloatLiteral { val } => Ok(Value::Float { val: *val }),
+        AstElement::UnaryExpr { expr, operator } => Ok(match operator {
             '!' => Value::Bool {
-                val: !as_bool(interpret(&expr, locals, globals)?),
+                val: !as_bool(interpret(&expr, locals, globals)?, ast_node)?,
             },
-            '-' => unary_minus(interpret(&expr, locals, globals)?),
+            '-' => unary_minus(interpret(&expr, locals, globals)?, ast_node)?,
             c => Err(InterpreterError::new(&format!(
                 "Unrecognised unary operator: {}",
                 c
-            )))?,
-        },
-    })
+            ), ast_node.into()))?,
+        }),
+    }
 }
 
 fn create_scope(node: &AstNode, args: &Vec<Value>) -> std::collections::HashMap<String, Value> {
