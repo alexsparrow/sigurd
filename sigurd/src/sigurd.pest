@@ -119,3 +119,4 @@ eoi = _{ !ANY }
 program = _{ SOI ~ top_level_statement* ~ eoi }
 
 WHITESPACE = _{ " " | "\t" | "\n" }
+COMMENT = _{ "//" ~ (!"\n" ~ ANY)* }
