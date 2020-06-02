@@ -1,10 +1,20 @@
+#![feature(set_stdio)]
 use sigurd::interp::interp::execute;
 use sigurd::parser::parser::parse_program;
 use wasm_bindgen::prelude::*;
+use std::sync::{Mutex, Arc};
+
+extern crate js_sys;
+
+mod print;
 
 #[wasm_bindgen]
-pub fn run(code: &str) -> JsValue {
+pub fn run(code: &str, f: &js_sys::Function) -> JsValue {
     let ast_result = parse_program(code);
+
+    // JsValue
+    let printer = print::JSPrintFn { js_func: Arc::new(Mutex::new(f.clone()))};
+    print::set_stdout(printer);
 
     match ast_result {
         Ok(ast) => {

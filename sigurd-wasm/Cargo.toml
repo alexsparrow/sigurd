@@ -11,6 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 sigurd = { path = "../sigurd" }
+js-sys = "0.3.40"
 
 [dependencies.wasm-bindgen]
 version = "^0.2"
