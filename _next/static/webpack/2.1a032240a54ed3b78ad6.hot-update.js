@@ -1,4 +1,4 @@
-(window["webpackJsonp"] = window["webpackJsonp"] || []).push([[2],{
+webpackHotUpdate(2,{
 
 /***/ "../sigurd-wasm/pkg/sigurd_wasm.js":
 /*!*****************************************!*\
@@ -46,4 +46,4 @@ wasmExports["__webpack_init__"]()
 
 /***/ })
 
-}]);
+})

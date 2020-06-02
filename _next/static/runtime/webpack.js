@@ -113,7 +113,7 @@
 /******/
 /******/ 	var hotApplyOnUpdate = true;
 /******/ 	// eslint-disable-next-line no-unused-vars
-/******/ 	var hotCurrentHash = "d38e40b52eb24654828e";
+/******/ 	var hotCurrentHash = "3a9e05ca07432e316d95";
 /******/ 	var hotRequestTimeout = 10000;
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule;
@@ -842,11 +842,23 @@
 /******/ 		"../sigurd-wasm/pkg/sigurd_wasm_bg.wasm": function() {
 /******/ 			return {
 /******/ 				"./sigurd_wasm_bg.js": {
+/******/ 					"__wbindgen_object_drop_ref": function(p0i32) {
+/******/ 						return installedModules["../sigurd-wasm/pkg/sigurd_wasm_bg.js"].exports["__wbindgen_object_drop_ref"](p0i32);
+/******/ 					},
 /******/ 					"__wbindgen_json_parse": function(p0i32,p1i32) {
 /******/ 						return installedModules["../sigurd-wasm/pkg/sigurd_wasm_bg.js"].exports["__wbindgen_json_parse"](p0i32,p1i32);
 /******/ 					},
 /******/ 					"__wbindgen_string_new": function(p0i32,p1i32) {
 /******/ 						return installedModules["../sigurd-wasm/pkg/sigurd_wasm_bg.js"].exports["__wbindgen_string_new"](p0i32,p1i32);
+/******/ 					},
+/******/ 					"__wbindgen_object_clone_ref": function(p0i32) {
+/******/ 						return installedModules["../sigurd-wasm/pkg/sigurd_wasm_bg.js"].exports["__wbindgen_object_clone_ref"](p0i32);
+/******/ 					},
+/******/ 					"__wbg_call_49bac88c9eff93af": function(p0i32,p1i32,p2i32) {
+/******/ 						return installedModules["../sigurd-wasm/pkg/sigurd_wasm_bg.js"].exports["__wbg_call_49bac88c9eff93af"](p0i32,p1i32,p2i32);
+/******/ 					},
+/******/ 					"__wbindgen_throw": function(p0i32,p1i32) {
+/******/ 						return installedModules["../sigurd-wasm/pkg/sigurd_wasm_bg.js"].exports["__wbindgen_throw"](p0i32,p1i32);
 /******/ 					}
 /******/ 				}
 /******/ 			};
@@ -970,7 +982,7 @@
 /******/ 				promises.push(installedWasmModuleData);
 /******/ 			else {
 /******/ 				var importObject = wasmImportObjects[wasmModuleId]();
-/******/ 				var req = fetch(__webpack_require__.p + "static/wasm/" + {"../sigurd-wasm/pkg/sigurd_wasm_bg.wasm":"e13e660736f23e2b421e"}[wasmModuleId] + ".wasm");
+/******/ 				var req = fetch(__webpack_require__.p + "static/wasm/" + {"../sigurd-wasm/pkg/sigurd_wasm_bg.wasm":"decb0e732f6a9a8c2640"}[wasmModuleId] + ".wasm");
 /******/ 				var promise;
 /******/ 				if(importObject instanceof Promise && typeof WebAssembly.compileStreaming === 'function') {
 /******/ 					promise = Promise.all([WebAssembly.compileStreaming(req), importObject]).then(function(items) {
