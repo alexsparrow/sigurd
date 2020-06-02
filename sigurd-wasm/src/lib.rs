@@ -1,17 +1,44 @@
-use wasm_bindgen::prelude::*;
-use sigurd::ast::parse_program;
+#![feature(set_stdio)]
 use sigurd::interp::interp::execute;
+use sigurd::parser::parser::parse_program;
+use wasm_bindgen::prelude::*;
+use std::sync::{Mutex, Arc};
 
-// Export a `greet` function from Rust to JavaScript, that alerts a
-// hello message.
+extern crate js_sys;
+
+mod print;
+
 #[wasm_bindgen]
-pub fn run(code: &str) -> JsValue {
-    let ast = parse_program(code);
-    let result = execute(ast, "main", &vec![]);
+pub fn run(code: &str, f: &js_sys::Function) -> JsValue {
+    let ast_result = parse_program(code);
 
-    return JsValue::from_str(format!("{:?}", result).as_ref());
+    // JsValue
+    let printer = print::JSPrintFn { js_func: Arc::new(Mutex::new(f.clone()))};
+    print::set_stdout(printer);
+
+    match ast_result {
+        Ok(ast) => {
+            let result = execute(ast, "main", &vec![]);
+            match result {
+                Ok(value) =>  JsValue::from_str(format!("Result: {:?}", value).as_ref()),
+                Err(e) => JsValue::from_str(&e.to_string())
+            }
+        }
+        Err(e) => return JsValue::from_str(&e.to_string()),
+    }
 }
 
+#[wasm_bindgen]
+pub fn parse(code: &str) -> JsValue {
+    let ast_result = parse_program(code);
+
+    match ast_result {
+        Ok(ast) => {
+            return JsValue::from_serde(&ast).unwrap();
+        }
+        Err(e) => return JsValue::from_str(format!("Parse error:\n{}", e).as_ref()),
+    }
+}
 
 #[test]
 fn it_works() {
