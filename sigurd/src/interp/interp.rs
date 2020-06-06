@@ -12,7 +12,7 @@ pub struct InterpreterError {
 
 impl fmt::Display for InterpreterError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(Position((line_a, col_a), (line_b, col_b))) = self.position {
+        if let Some(Position((line_a, col_a), (_line_b,_col_b))) = self.position {
             write!(f, "Interpreter error (line {}, column {}): {}", line_a, col_a, self.message)
         } else {
             write!(f, "Interpreter error: {}", self.message)

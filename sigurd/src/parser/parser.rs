@@ -2,7 +2,7 @@ use pest::Parser;
 
 use super::ast::{AstElement, AstNode, Position};
 use pest::{
-    error::{Error, InputLocation, LineColLocation},
+    error::{Error},
     iterators::{Pair, Pairs},
     prec_climber::{Assoc, Operator, PrecClimber},
 };
@@ -48,7 +48,7 @@ where
     x.as_str()
         .trim()
         .parse::<T>()
-        .map_err(|e| AstError::new(format!("Can't parse literal: \"{}\"", x.as_str()).as_ref()))
+        .map_err(|_e| AstError::new(format!("Can't parse literal: \"{}\"", x.as_str()).as_ref()))
 }
 
 fn ast_node(x: &Pair<Rule>, element: AstElement) -> AstNode {

@@ -1,4 +1,4 @@
-use std::{ffi::CString, io, sync::{Mutex, Arc}, pin::Pin};
+use std::{io, sync::{Mutex, Arc}};
 use wasm_bindgen::JsValue;
 
 // type PrintFn = fn(&str) -> io::Result<()>;
@@ -18,7 +18,7 @@ unsafe impl Send for JSPrintFn {
 impl PrintFn for JSPrintFn {
     fn print(&self, buf: &str) -> io::Result<()> {
 
-        self.js_func.lock().unwrap().call1(&JsValue::NULL, &JsValue::from_str(buf));
+        self.js_func.lock().unwrap().call1(&JsValue::NULL, &JsValue::from_str(buf)).unwrap();
 
     Ok(())
     }

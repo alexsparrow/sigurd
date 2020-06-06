@@ -65,7 +65,6 @@ fn assignment() {
   "#;
 
     let ast = parse_program(program).unwrap();
-    println!("AST: {:#?}", ast);
     let val = execute(ast, "foo", &vec![]).unwrap();
 
     assert_eq!(val, Value::Int { val: 2 })
