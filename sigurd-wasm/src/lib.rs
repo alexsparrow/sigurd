@@ -8,11 +8,14 @@ extern crate js_sys;
 
 mod print;
 
+
+extern crate wasm_bindgen_test;
+use wasm_bindgen_test::*;
+
 #[wasm_bindgen]
 pub fn run(code: &str, f: &js_sys::Function) -> JsValue {
     let ast_result = parse_program(code);
 
-    // JsValue
     let printer = print::JSPrintFn { js_func: Arc::new(Mutex::new(f.clone()))};
     print::set_stdout(printer);
 
@@ -40,11 +43,11 @@ pub fn parse(code: &str) -> JsValue {
     }
 }
 
-#[test]
+#[wasm_bindgen_test]
 fn it_works() {
     run(r#"
     fn main(args: string) {
         print("Hello")
     }
-    "#);
+    "#,  &js_sys::Function::new_no_args("{}"));
 }

@@ -150,7 +150,6 @@ fn interpret(
                 ">" => Value::Bool {
                     val: left_value > right_value,
                 },
-
                 s => Err(InterpreterError::new(&format!(
                     "Operator not implemented: {}",
                     s
@@ -196,7 +195,12 @@ fn interpret(
             let result = interpret(&expr, locals, globals)?;
             locals.insert(unwrap_ident(name.as_ref()).clone().into(), result);
             Ok(Value::Null)
-        }
+        },
+        AstElement::Assignment { name, expr } => {
+            let result = interpret(&expr, locals, globals)?;
+            locals.insert(unwrap_ident(name.as_ref()).clone().into(), result.clone());
+            Ok(result)
+        },
         AstElement::IntLiteral { val } => Ok(Value::Int { val: *val }),
         AstElement::StringLiteral { val } => Ok(Value::String { val: val.clone() }),
         AstElement::BoolLiteral { val } => Ok(Value::Bool { val: *val }),

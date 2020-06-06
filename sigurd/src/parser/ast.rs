@@ -25,6 +25,10 @@ pub enum AstElement {
         right: Box<AstNode>,
         operator: String,
     },
+    Assignment {
+        name: Box<AstNode>,
+        expr: Box<AstNode>
+    },
     FunctionCall {
         left: Option<Box<AstNode>>,
         name: String,
@@ -50,7 +54,7 @@ pub enum AstElement {
     },
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Clone, Serialize)]
+#[derive(Debug, PartialOrd, PartialEq, Copy, Clone, Serialize)]
 pub struct Position(pub (usize, usize), pub (usize, usize));
 
 #[derive(Debug, PartialEq, Clone, PartialOrd, Serialize)]

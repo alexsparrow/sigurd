@@ -16,3 +16,6 @@ js-sys = "0.3.40"
 [dependencies.wasm-bindgen]
 version = "^0.2"
 features = ["serde-serialize"]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.0"

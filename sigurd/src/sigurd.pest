@@ -46,6 +46,7 @@ op_unary       = _{
 }
 
 op_plus          =  { "+" }
+op_assign        =  { "=" }
 op_minus         =  { "-" }
 op_times         =  { "*" }
 op_divide        =  { "/" }
@@ -70,7 +71,8 @@ op_infix         = _{
     op_lower_equal |
     op_lower |
     op_equal |
-    op_not_equal
+    op_not_equal | 
+    op_assign
 }
 
 paren_open  = { "(" }
